@@ -2,7 +2,6 @@ module Test_pscric
 
 using PeriodicMatrixEquations
 using ApproxFun
-using DescriptorSystems
 using MatrixEquations
 using Symbolics
 using Test

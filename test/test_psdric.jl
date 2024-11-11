@@ -5,7 +5,6 @@ using MatrixEquations
 using Symbolics
 using Test
 using LinearAlgebra
-#using JLD
 
 println("Test_psdric")
 
