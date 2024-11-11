@@ -1,7 +1,6 @@
 module Test_psdlyap
 
 using PeriodicMatrixEquations
-using DescriptorSystems
 using Symbolics
 using Test
 using LinearAlgebra

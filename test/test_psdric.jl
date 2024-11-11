@@ -1,7 +1,6 @@
 module Test_psdric
 
 using PeriodicMatrixEquations
-using DescriptorSystems
 using MatrixEquations
 using Symbolics
 using Test
@@ -15,7 +14,7 @@ println("Test_psdric")
 p = 10; n = 10; m = 5; period = 10;
 A = PeriodicMatrix([rand(n,n) for i in 1:p],period);
 B = PeriodicMatrix([rand(n,m) for i in 1:p],period);
-R = PeriodicMatrix(eye(Float64,m),period; nperiod = period);
+R = PeriodicMatrix(Matrix{Float64}(I(m)),period; nperiod = period);
 C = PeriodicMatrix([rand(m,n) for i in 1:p],period);
 Q = C'*C; Q = (Q+Q')/2
 
@@ -48,7 +47,7 @@ p = 5; na = [10, 8, 6, 4, 2]; ma = circshift(na,-1);
 m = 5; period = 10;
 A = PeriodicMatrix([rand(ma[i],na[i]) for i in 1:p],period);
 B = PeriodicMatrix([rand(ma[i],m) for i in 1:p],period);
-R = PeriodicMatrix(eye(Float64,m),period; nperiod = rationalize(A.period/A.Ts).num);
+R = PeriodicMatrix(Matrix{Float64}(I(m)),period; nperiod = rationalize(A.period/A.Ts).num);
 C = PeriodicMatrix([rand(m,na[i]) for i in 1:p],period);
 Q = C'*C;  Q = (Q+Q')/2
 
@@ -87,7 +86,7 @@ p = 5; na = [2, 6, 4, 5, 8]; ma = circshift(na,-1);
 m = 2; period = 10;
 A = PeriodicMatrix([rand(ma[i],na[i]) for i in 1:p],period);
 B = PeriodicMatrix([rand(ma[i],m) for i in 1:p],period);
-R = PeriodicMatrix(eye(Float64,m),period; nperiod = rationalize(A.period/A.Ts).num);
+R = PeriodicMatrix(Matrix{Float64}(I(m)),period; nperiod = rationalize(A.period/A.Ts).num);
 C = PeriodicMatrix([rand(m,na[i]) for i in 1:p],period);
 Q = C'*C;  Q = (Q+Q')/2
 
@@ -199,7 +198,7 @@ p = 10; n = 10; m = 5; period = 10;
 A = PeriodicArray(rand(n,n,p),period)
 B = PeriodicArray(rand(n,m,p),period)
 C = PeriodicArray(rand(m,n,p),period)
-R = PeriodicArray(eye(Float64,m),period; nperiod = period)
+R = PeriodicArray(Matrix{Float64}(I(m)),period; nperiod = period)
 Q = C'*C;  Q = (Q+Q')/2
 @time X, EVALS, G = prdric(A,B,R,Q);
 

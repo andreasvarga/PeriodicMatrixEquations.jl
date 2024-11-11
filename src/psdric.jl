@@ -77,7 +77,7 @@ function prdric(A::PA1, B::PA2, R::PA3, Q::PA4, S::Union{PA5,Missing} = missing;
    n2 = 2*n
    ZERA = zeros(n,n)
    ZERBT = zeros(m,n)
-   EYE = eye(Float64,n)
+   EYE = Matrix{Float64}(I(n))
    if fast
       # use fast structure exploiting reduction of the symplectic pencil
       ZERA2 = zeros(n2,n2)
@@ -342,7 +342,7 @@ function prdric(A::PM1, B::PM2, R::PM3, Q::PM4, S::Union{PM5,Missing} = missing;
   n2 = 2*n
   ZERA = zeros(n,n)
   ZERBT = zeros(m,n)
-  EYE = eye(Float64,n)
+  EYE = Matrix{Float64}(I(n))
   if fast
      # use fast structure exploiting reduction of the symplectic periodic pair (M(i),L(i))
      ZERA2 = zeros(n2,n2)

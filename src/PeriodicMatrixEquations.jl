@@ -10,6 +10,8 @@ using OrdinaryDiffEq
 using PeriodicSchurDecompositions
 using Symbolics
 
+import LinearAlgebra: BlasInt, BlasFloat, BlasReal, BlasComplex
+
 export pdlyap, pdlyap2, prdlyap, pfdlyap, pslyapd, pslyapd2, pdlyaps!, pdlyaps1!, pdlyaps2!, pdlyaps3!, dpsylv2, dpsylv2!, pslyapdkr, dpsylv2krsol!, kronset!
 export prdplyap, pfdplyap, pdplyap, psplyapd
 export pclyap, pfclyap, prclyap, pgclyap, pgclyap2, tvclyap_eval

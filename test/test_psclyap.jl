@@ -2,7 +2,6 @@ module Test_psclyap
 
 using PeriodicMatrixEquations
 using ApproxFun
-using DescriptorSystems
 using Symbolics
 using Test
 using LinearAlgebra
