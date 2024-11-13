@@ -8,7 +8,7 @@ using LinearAlgebra
 
 println("Test_psdric")
 
-@testset "prdric" begin
+@testset "psdric" begin
 
 p = 10; n = 10; m = 5; period = 10;
 A = PeriodicMatrix([rand(n,n) for i in 1:p],period);
@@ -24,6 +24,51 @@ Xs = pmshift(X)
 res = X-A'*(Xs -Xs*B*inv(R+B'*Xs*B)*B'*Xs)*A-Q;
 @test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev))) < 1.e-6 &&
                            norm(sort(imag(EVALS))-sort(imag(ev))) < 1.e-6 
+
+A1 = A'; C1 = B';
+@time X1, EVALS1, G1 = pfdric(A1,C1,R,Q);  
+ev1 = pseig(A1-G1*C1)
+Xs1 = pmshift(X1)
+res1 = Xs1-A1*(X1-X1*C1'*inv(R+C1*X1*C1')*C1*X1)*A1'-Q;
+@test norm(res1)/norm(X1) < 1.e-6 && issymmetric(X1) && 
+      norm(sort(real(EVALS1))-sort(real(ev1))) < 1.e-6 && 
+      norm(sort(imag(EVALS1))-sort(imag(ev1))) < 1.e-6 
+
+
+@time X, EVALS, G = prdric(A,B,R,Q, zeros(n,m));
+
+ev = pseig(A-B*G)
+Xs = pmshift(X)
+res = X-A'*(Xs -Xs*B*inv(R+B'*Xs*B)*B'*Xs)*A-Q;
+@test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev))) < 1.e-6 &&
+                           norm(sort(imag(EVALS))-sort(imag(ev))) < 1.e-6 
+
+@time X1, EVALS1, G1 = pfdric(A1,C1,R,Q,zeros(n,m));  
+ev1 = pseig(A1-G1*C1)
+Xs1 = pmshift(X1)
+res1 = Xs1-A1*(X1-X1*C1'*inv(R+C1*X1*C1')*C1*X1)*A1'-Q;
+@test norm(res1)/norm(X1) < 1.e-6 && issymmetric(X1) && 
+      norm(sort(real(EVALS1))-sort(real(ev1))) < 1.e-6 && 
+      norm(sort(imag(EVALS1))-sort(imag(ev1))) < 1.e-6 
+
+
+@time X, EVALS, G = prdric(A,B,Matrix{Float64}(I(m)),Q, zeros(n,m));
+
+ev = pseig(A-B*G)
+Xs = pmshift(X)
+res = X-A'*(Xs -Xs*B*inv(I+B'*Xs*B)*B'*Xs)*A-Q;
+@test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev))) < 1.e-6 &&
+                           norm(sort(imag(EVALS))-sort(imag(ev))) < 1.e-6 
+
+@time X1, EVALS1, G1 = pfdric(A1,C1,Matrix{Float64}(I(m)),Q, zeros(n,m));  
+ev1 = pseig(A1-G1*C1)
+Xs1 = pmshift(X1)
+res1 = Xs1-A1*(X1-X1*C1'*inv(I+C1*X1*C1')*C1*X1)*A1'-Q;
+@test norm(res1)/norm(X1) < 1.e-6 && issymmetric(X1) && 
+      norm(sort(real(EVALS1))-sort(real(ev1))) < 1.e-6 && 
+      norm(sort(imag(EVALS1))-sort(imag(ev1))) < 1.e-6                           
+
+
 
 @time X, EVALS, G = prdric(A,B,R,Q,fast = false, nodeflate = false);
 
@@ -57,6 +102,10 @@ res = X-A'*(Xs -Xs*B*inv(R+B'*Xs*B)*B'*Xs)*A-Q;
 nc = length(EVALS)
 @test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev[1:nc]))) < 1.e-6 &&
                            norm(sort(imag(EVALS))-sort(imag(ev[1:nc]))) < 1.e-6
+
+@test_throws  "Constant" X, EVALS, G = prdric(A,B,R,rand(10,10),zeros(10,3));     
+A1 = A'; C1 = B';  
+@test_throws  "Constant" X, EVALS, G = prdric(A1,C1,R,rand(10,10),zeros(10,3));                    
 
 @time X, EVALS, G = prdric(A,B,R,Q,fast = false,nodeflate = false);
 
@@ -207,6 +256,50 @@ res = X-A'*(Xs -Xs*B*inv(R+B'*Xs*B)*B'*Xs)*A-Q;
 @test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev))) < 1.e-6 &&
                            norm(sort(imag(EVALS))-sort(imag(ev))) < 1.e-6 
 
+A1 = A'; C1 = B';
+@time X1, EVALS1, G1 = pfdric(A1,C1,R,Q);  
+ev1 = pseig(A1-G1*C1)
+Xs1 = pmshift(X1)
+res1 = Xs1-A1*(X1-X1*C1'*inv(R+C1*X1*C1')*C1*X1)*A1'-Q;
+@test norm(res1)/norm(X1) < 1.e-6 && issymmetric(X1) && 
+      norm(sort(real(EVALS1))-sort(real(ev1))) < 1.e-6 && 
+      norm(sort(imag(EVALS1))-sort(imag(ev1))) < 1.e-6 
+
+
+@time X, EVALS, G = prdric(A,B,R,Q, zeros(n,m));
+
+ev = pseig(A-B*G)
+Xs = pmshift(X)
+res = X-A'*(Xs -Xs*B*inv(R+B'*Xs*B)*B'*Xs)*A-Q;
+@test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev))) < 1.e-6 &&
+                           norm(sort(imag(EVALS))-sort(imag(ev))) < 1.e-6 
+
+@time X1, EVALS1, G1 = pfdric(A1,C1,R,Q, zeros(n,m));  
+ev1 = pseig(A1-G1*C1)
+Xs1 = pmshift(X1)
+res1 = Xs1-A1*(X1-X1*C1'*inv(R+C1*X1*C1')*C1*X1)*A1'-Q;
+@test norm(res1)/norm(X1) < 1.e-6 && issymmetric(X1) && 
+      norm(sort(real(EVALS1))-sort(real(ev1))) < 1.e-6 && 
+      norm(sort(imag(EVALS1))-sort(imag(ev1))) < 1.e-6 
+
+
+@time X, EVALS, G = prdric(A,B,Matrix{Float64}(I(m)),Q, zeros(n,m));
+
+ev = pseig(A-B*G)
+Xs = pmshift(X)
+res = X-A'*(Xs -Xs*B*inv(I+B'*Xs*B)*B'*Xs)*A-Q;
+@test norm(res) < 1.e-6 && norm(sort(real(EVALS))-sort(real(ev))) < 1.e-6 &&
+                           norm(sort(imag(EVALS))-sort(imag(ev))) < 1.e-6 
+
+@time X1, EVALS1, G1 = pfdric(A1,C1,Matrix{Float64}(I(m)),Q, zeros(n,m));  
+ev1 = pseig(A1-G1*C1)
+Xs1 = pmshift(X1)
+res1 = Xs1-A1*(X1-X1*C1'*inv(I+C1*X1*C1')*C1*X1)*A1'-Q;
+@test norm(res1)/norm(X1) < 1.e-6 && issymmetric(X1) && 
+      norm(sort(real(EVALS1))-sort(real(ev1))) < 1.e-6 && 
+      norm(sort(imag(EVALS1))-sort(imag(ev1))) < 1.e-6 
+
+
 
 # Hench & Laub's IEEE TAC 1994: Example 2     
 A1 =  [-3 2 9; 0 0 -4; 3 -2 3]; B1 = [1;1;0;;]; C1 = [1 0 0]; R1 = [1;;];             
@@ -317,5 +410,5 @@ res1 = Xs1-A1*(X1-X1*C1'*inv(R+C1*X1*C1')*C1*X1)*A1'-Q;
 Xs1 = pmshift(X1)
 res1 = Xs1-A1*(X1-X1*C1'*inv(r+C1*X1*C1')*C1*X1)*A1'-q;
 @test norm(res1)/norm(X1) < 1.e-6 
-end #prdare
+end 
 end
