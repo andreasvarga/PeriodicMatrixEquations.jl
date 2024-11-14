@@ -603,7 +603,6 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
        sol = solve(prob,MagnusGL6(), dt = dt, save_everystep = false)
     elseif solver == "symplectic" 
        # high accuracy symplectic
-       @show solver, dt
        if dt == 0 
          sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, save_everystep = false)
          #@show sol.retcode

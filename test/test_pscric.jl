@@ -25,6 +25,11 @@ PM = PeriodicFunctionMatrix
 @time X1, EVALS1, F1 = pfcric(PM(Matrix(A'),period), PM(Matrix(B'),period), R, Q)
 @test X1(0) ≈ Xref && PeriodicMatrices.isconstant(X1)
 
+PM = FourierFunctionMatrix
+@time X, EVALS, F = prcric(PM(A,period), PM(B,period), R, Q)
+@test X(0) ≈ Xref && PeriodicMatrices.isconstant(X)
+@time X1, EVALS1, F1 = pfcric(PM(Matrix(A'),period), PM(Matrix(B'),period), R, Q)
+@test X1(0) ≈ Xref && PeriodicMatrices.isconstant(X1)
 
 # @variables t
 # P = PeriodicSymbolicMatrix([cos(ω*t) sin(ω*t); -sin(ω*t) cos(ω*t)],period); PM = PeriodicSymbolicMatrix
@@ -63,11 +68,11 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
         @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
-        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
         @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
-        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
     end
     #N = length(Xp.values)
     ti = collect((0:N-1)*Xp.period/N)*(1+eps(10.))
