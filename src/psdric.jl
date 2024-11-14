@@ -528,7 +528,7 @@ function pfdric(A::PM1, C::PM2, R::PM3, Q::PM4, S::Union{PM5,Missing} = missing;
   return reverse(pmshift(Xt)), EVALS, reverse(Ft)'
 end
 function pfdric(A::PM1, C::PM2, R::PM3, Q::PM4, S::AbstractMatrix; kwargs...) where 
-   {PM1 <: PeriodicMatrix, PM2 <: PeriodicMatrix, PM3 <: PeriodicMatrix, PM4 <: PeriodicMatrix, PM5 <: PeriodicMatrix}
+   {PM1 <: PeriodicMatrix, PM2 <: PeriodicMatrix, PM3 <: PeriodicMatrix, PM4 <: PeriodicMatrix}
    Xt, EVALS, Ft =  prdric(reverse(A)', reverse(C)', reverse(R), reverse(Q), S; kwargs...) 
    return reverse(pmshift(Xt)), EVALS, reverse(Ft)'
  end

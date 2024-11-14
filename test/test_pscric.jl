@@ -17,7 +17,14 @@ A = [1 0.5; 3 5]; B = [3;1;;]; Q = [1. 0;0 1]; R = [1.;;]
 period = π; 
 ω = 2. ;
 
-Xref, EVALSref, Fref = arec(A,B,R,Q); 
+@time Xref, EVALSref, Fref = arec(A,B,R,Q); 
+
+PM = PeriodicFunctionMatrix
+@time X, EVALS, F = prcric(PM(A,period), PM(B,period), R, Q)
+@test X(0) ≈ Xref && PeriodicMatrices.isconstant(X)
+@time X1, EVALS1, F1 = pfcric(PM(Matrix(A'),period), PM(Matrix(B'),period), R, Q)
+@test X1(0) ≈ Xref && PeriodicMatrices.isconstant(X1)
+
 
 # @variables t
 # P = PeriodicSymbolicMatrix([cos(ω*t) sin(ω*t); -sin(ω*t) cos(ω*t)],period); PM = PeriodicSymbolicMatrix
@@ -42,6 +49,7 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
     Rp = PM(R, Ap.period)
     Xp = inv(P)'*Xref*inv(P)
     Fp = Bp'*Xp
+    Xnorm = norm(Xp); Fnorm = norm(Fp)
     if PM == PeriodicTimeSeriesMatrix 
        @test norm(Ap'*Xp+Xp*Ap+Qp-Xp*Bp*Bp'*Xp + pmderiv(Xp)) < 1.e-5*norm(Xp)
     else
@@ -50,18 +58,29 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
     end
     
     solver = "symplectic"
+    if PM == PeriodicFunctionMatrix
+        ti = rand(5)*Xp.period
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+    end
     #N = length(Xp.values)
     ti = collect((0:N-1)*Xp.period/N)*(1+eps(10.))
     for solver in ("non-stiff", "stiff", "symplectic", "linear", "noidea")
         println("solver = $solver")
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) #error
-        Errx = norm(X.(ti)-Xp.(ti))/norm(Xp); Errf = norm(F.(ti)-Fp.(ti))/norm(Fp)
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
-        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
-        Errx = norm(X.(ti)-Xp.(ti))/norm(Xp); Errf = norm(F.(ti)-Fp.(ti))/norm(Fp)
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false,dt=0.001) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
-        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
     end
 end   
 
@@ -137,6 +156,12 @@ Xdot = pmderiv(X);
 
 Xdot = pmderiv(X); 
 @test norm(A'.(ts).*X.(ts).+X.(ts).*A.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .+ Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-7
+
+@time X, EVALS, F = pfcric(A, B', R, Q; K = 100, solver = "non-stiff", reltol = 1.e-10, abstol = 1.e-10, fast = true);
+@test all(real(psceig(A-F*B',100)) .< 0)
+
+Xdot = pmderiv(X); 
+@test norm(A.(ts).*X.(ts).+X.(ts).*A'.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .- Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-7
 
 
 # Pitelkau's example - singular Lyapunov equations

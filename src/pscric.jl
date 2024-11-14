@@ -72,7 +72,7 @@ _References_
 function pcric(A::PeriodicFunctionMatrix, R::PeriodicFunctionMatrix, Q::PeriodicFunctionMatrix; K::Int = 10, adj = false, PSD_SLICOT::Bool = true, solver = "symplectic", reltol = 1.e-4, abstol = 1.e-7, dt = 0.0, 
    fast = true, intpol = solver == "symplectic" ? true : false, intpolmeth = "cubic")
    X, EVALS = pgcric(A, R, Q, K;  adj, solver, reltol, abstol, dt, fast, PSD_SLICOT)
-   if intpol
+   if intpol && K >= 10
       return convert(PeriodicFunctionMatrix, X, method = intpolmeth), EVALS
    else
       return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcric_eval(t, X, A, R, Q; solver, adj, reltol, abstol),A.period), EVALS
@@ -603,6 +603,7 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
        sol = solve(prob,MagnusGL6(), dt = dt, save_everystep = false)
     elseif solver == "symplectic" 
        # high accuracy symplectic
+       @show solver, dt
        if dt == 0 
          sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, save_everystep = false)
          #@show sol.retcode

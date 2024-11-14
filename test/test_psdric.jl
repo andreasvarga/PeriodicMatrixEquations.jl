@@ -105,7 +105,7 @@ nc = length(EVALS)
 
 @test_throws  "Constant" X, EVALS, G = prdric(A,B,R,rand(10,10),zeros(10,3));     
 A1 = A'; C1 = B';  
-@test_throws  "Constant" X, EVALS, G = prdric(A1,C1,R,rand(10,10),zeros(10,3));                    
+@test_throws  "Constant" X, EVALS, G = pfdric(A1,C1,R,rand(10,10),zeros(10,3));                    
 
 @time X, EVALS, G = prdric(A,B,R,Q,fast = false,nodeflate = false);
 
