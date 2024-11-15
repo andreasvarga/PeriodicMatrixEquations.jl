@@ -706,8 +706,25 @@ Qd = PeriodicArray(q,pc);
 X = prdlyap(Ad, Qd); 
 @test norm(Ad'*pmshift(X)*Ad-X+Qd) < 1.e-7 
 
-X = pfdlyap(Ad, Qd) 
-@test norm(Ad*X*Ad'-pmshift(X)+Qd) < 1.e-7 
+Y = pfdlyap(Ad, Qd) 
+@test norm(Ad*Y*Ad'-pmshift(Y)+Qd) < 1.e-7 
+
+p = lcm(pa,pc)
+X1 = zeros(n,n,p); Y1 = zeros(n,n,p); Xt = zeros(n,n); QW = zeros(n,n,p);
+PeriodicMatrixEquations.pslyapd!(X1, copy(Ad.M), copy(Qd.M), Xt, QW; adj = true) 
+PeriodicMatrixEquations.pslyapd!(Y1, copy(Ad.M), copy(Qd.M), Xt, QW; adj = false) 
+@test X1 ≈ X.M && Y1 ≈ Y.M
+
+T = Float64; N = p; 
+qr_ws = QRWs(zeros(8), zeros(4))
+#WORK1 = (Array{T,3}(undef, n, n, N), Array{T,3}(undef, n, n, N), Array{T,3}(undef, n, n, N), Matrix{T}(undef, n, n), Array{T,3}(undef,n,n,N), ws_pschur(Gt) )
+WORK2 = (Array{Float64,3}(undef,2,2,N), Array{Float64,3}(undef,4,4,N), Array{Float64,3}(undef,4,4,N),
+Matrix{Float64}(undef,4*N,4), Vector{Float64}(undef,4*N), Matrix{Float64}(undef,8,8),
+qr_ws, QROrmWs(zeros(4), qr_ws.τ))
+
+PeriodicMatrixEquations.pslyapd2!(Y1, X1, copy(Ad.M), copy(Qd.M), copy(Qd.M), Xt, QW, WORK2, ws_pschur(Ad.M))
+@test X1 ≈ X.M && Y1 ≈ Y.M
+
 
 #pseig(Ad)
 
