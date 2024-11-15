@@ -82,7 +82,7 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
         @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false,dt=0.001) 
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false,dt=0.001,intpol = false); 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
         @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2

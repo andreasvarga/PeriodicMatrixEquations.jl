@@ -1,5 +1,5 @@
 """
-    pcric(A, R, Q; K = 10, adj = false, solver, reltol, abstol, fast, intpol, intpolmeth) -> (X, EVALS)
+    pcric(A, R, Q; K = 10, adj = false, solver, reltol, abstol, fast, intpol, intpolmeth, dt) -> (X, EVALS)
 
 Solve the periodic Riccati differential equation
 
@@ -75,7 +75,7 @@ function pcric(A::PeriodicFunctionMatrix, R::PeriodicFunctionMatrix, Q::Periodic
    if intpol && K >= 10
       return convert(PeriodicFunctionMatrix, X, method = intpolmeth), EVALS
    else
-      return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcric_eval(t, X, A, R, Q; solver, adj, reltol, abstol),A.period), EVALS
+      return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcric_eval(t, X, A, R, Q; solver, adj, reltol, abstol, dt),A.period), EVALS
    end
 end
 for PM in (:PeriodicSymbolicMatrix, :HarmonicArray)
@@ -610,7 +610,7 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
             sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt = abs(tf-t0)/100)
          end
        else
-           sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
+         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
        end
    else 
        if reltol > 1.e-4  

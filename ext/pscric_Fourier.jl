@@ -75,7 +75,7 @@ _References_
          Rt = convert(PeriodicFunctionMatrix,R)
          Qt = convert(PeriodicFunctionMatrix,Q)
          X, EVALS = PeriodicMatrixEquations.pgcric(At, Rt, Qt, K;  adj, solver, reltol, abstol, dt, fast, PSD_SLICOT)
-         if intpol
+         if intpol && K >= 10
             return convert(PeriodicFunctionMatrix, X, method = intpolmeth), EVALS
          else
             return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcric_eval(t, X, At, Rt, Qt; solver, adj, reltol, abstol),A.period), EVALS
