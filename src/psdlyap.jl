@@ -987,7 +987,7 @@ function pdlyaps3!(KSCHUR::Int, A::AbstractArray{T1,3}, C::AbstractArray{T1,3}; 
    (KSCHUR <= 0 || KSCHUR > pa ) && 
          error("KSCHUR has a value $KSCHUR, which is inconsistent with A ")
 
-   if pa == 1 && pc == 1   
+   if pa == 1 && pc == 1  
       lyapds!(view(A,:,:,1), view(C,:,:,1); adj)
       return #C[:,:,:]
    end
@@ -2390,7 +2390,7 @@ function dpsylv2(REV::Bool, N1::Int, N2::Int, KSCHUR::Int, TL::StridedArray{T,3}
           ITIND = -1
       end
    end
-   for ITER = 1:30
+   for ITER = 1:60
        if N1 == 1 && N2 == 1 
           if STAB 
 

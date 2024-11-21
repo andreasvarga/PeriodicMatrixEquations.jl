@@ -122,6 +122,31 @@ X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY)
 rez = al[i1,i1,1]*X1[i1,i2,1]*ar[i2,i2,1]'-X1[i1,i2,1]+q[i1,i2,1]   
 @test norm(rez) < 1.e-7  
 
+p = 1; 
+al = rand(2,2,p); al[:,:,1] = triu(al[:,:,1]); ar = rand(2,2,p); ar[:,:,1] = triu(ar[:,:,1]); 
+q = rand(2,2,p);
+REV = true
+KSCHUR = 1
+n1 = 1; n2 = 1; 
+X = dpsylv2(REV, n1, n2, KSCHUR, al, ar, q, W, WX) 
+WUSD = Array{Float64,3}(undef,4,4,p)
+WUD = Array{Float64,3}(undef,4,4,p)
+WUL = Matrix{Float64}(undef,4*p,4)
+WY = Vector{Float64}(undef,4*p)
+W = Matrix{Float64}(undef,8,8)
+qr_ws = QRWs(zeros(8), zeros(4))
+ormqr_ws = QROrmWs(zeros(4), qr_ws.τ)  
+i1 = 1:n1; i2 = 1:n2
+X3 = copy(q[i1,i2,1:p]); dpsylv2krsol!(REV, n1, n2, KSCHUR, al, ar, X3, WUD, WUSD, WUL, WY, W, qr_ws, ormqr_ws)  
+rez1 = al[i1,i1,1]'*X3[i1,i2,1]*ar[i2,i2,1]-X3[i1,i2,1]+q[i1,i2,1]   
+#rez2 = al[i1,i1,2]'*X3[i1,i2,1]*ar[i2,i2,2]-X3[i1,i2,2]+q[i1,i2,2]   
+@test norm(rez1) < 1.e-7  
+
+
+W = Matrix{Float64}(undef,2,14)
+WZ = Matrix{Float64}(undef,8,8)
+WY = Vector{Float64}(undef,8)
+WX = Matrix{Float64}(undef,4,5)
 
 p = 2; 
 al = rand(2,2,p); al[:,:,1] = triu(al[:,:,1]); ar = rand(2,2,p); ar[:,:,1] = triu(ar[:,:,2]); 
@@ -168,24 +193,24 @@ rez1 = al[i1,i1,1]*X3[i1,i2,1]*ar[i2,i2,1]'-X3[i1,i2,2]+q[i1,i2,1]
 rez2 = al[i1,i1,2]*X3[i1,i2,2]*ar[i2,i2,2]'-X3[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7  
 
-al = 10*al; ar = 10*ar; 
-X = dpsylv2(REV, n1, n2, KSCHUR, al, ar, q, W, WX) 
+al1 = 100*al; ar1 = 100*ar; 
+X = dpsylv2(REV, n1, n2, KSCHUR, al1, ar1, q, W, WX) 
 i1 = 1:n1; i2 = 1:n2
-rez1 = al[i1,i1,1]'*X[i1,i2,2]*ar[i2,i2,1]-X[i1,i2,1]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]'*X[i1,i2,1]*ar[i2,i2,2]-X[i1,i2,2]+q[i1,i2,2]   
+rez1 = al1[i1,i1,1]'*X[i1,i2,2]*ar1[i2,i2,1]-X[i1,i2,1]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]'*X[i1,i2,1]*ar1[i2,i2,2]-X[i1,i2,2]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7         
-X = dpsylv2(!REV, n1, n2, KSCHUR, al, ar, q, W, WX) 
-rez1 = al[i1,i1,1]*X[i1,i2,1]*ar[i2,i2,1]'-X[i1,i2,2]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]*X[i1,i2,2]*ar[i2,i2,2]'-X[i1,i2,1]+q[i1,i2,2]   
+X = dpsylv2(!REV, n1, n2, KSCHUR, al1, ar1, q, W, WX) 
+rez1 = al1[i1,i1,1]*X[i1,i2,1]*ar1[i2,i2,1]'-X[i1,i2,2]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]*X[i1,i2,2]*ar1[i2,i2,2]'-X[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7 
 
-X1 = copy(q[i1,i2,1:p]); dpsylv2!(REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY) 
-rez1 = al[i1,i1,1]'*X1[i1,i2,2]*ar[i2,i2,1]-X1[i1,i2,1]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]'*X1[i1,i2,1]*ar[i2,i2,2]-X1[i1,i2,2]+q[i1,i2,2]   
+X1 = copy(q[i1,i2,1:p]); dpsylv2!(REV, n1, n2, KSCHUR, al1, ar1, X1, WZ, WY) 
+rez1 = al1[i1,i1,1]'*X1[i1,i2,2]*ar1[i2,i2,1]-X1[i1,i2,1]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]'*X1[i1,i2,1]*ar1[i2,i2,2]-X1[i1,i2,2]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7         
-X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY) 
-rez1 = al[i1,i1,1]*X1[i1,i2,1]*ar[i2,i2,1]'-X1[i1,i2,2]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]*X1[i1,i2,2]*ar[i2,i2,2]'-X1[i1,i2,1]+q[i1,i2,2]   
+X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al1, ar1, X1, WZ, WY) 
+rez1 = al1[i1,i1,1]*X1[i1,i2,1]*ar1[i2,i2,1]'-X1[i1,i2,2]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]*X1[i1,i2,2]*ar1[i2,i2,2]'-X1[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7 
 
 
@@ -205,7 +230,7 @@ X1 = copy(q[i1,i2,1:p]); dpsylv2!(REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY)
 rez1 = al[i1,i1,1]'*X1[i1,i2,2]*ar[i2,i2,1]-X1[i1,i2,1]+q[i1,i2,1]   
 rez2 = al[i1,i1,2]'*X1[i1,i2,1]*ar[i2,i2,2]-X1[i1,i2,2]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7         
-X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY) # fails
+X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY) 
 rez1 = al[i1,i1,1]*X1[i1,i2,1]*ar[i2,i2,1]'-X1[i1,i2,2]+q[i1,i2,1]   
 rez2 = al[i1,i1,2]*X1[i1,i2,2]*ar[i2,i2,2]'-X1[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7  
@@ -220,7 +245,7 @@ rez1 = al[i1,i1,1]*X3[i1,i2,1]*ar[i2,i2,1]'-X3[i1,i2,2]+q[i1,i2,1]
 rez2 = al[i1,i1,2]*X3[i1,i2,2]*ar[i2,i2,2]'-X3[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7  
 
-al = 10*al; ar = 10*ar; 
+al = 100*al; ar = 100*ar; 
 X = dpsylv2(REV, n1, n2, KSCHUR, al, ar, q, W, WX) 
 i1 = 1:n1; i2 = 1:n2
 rez1 = al[i1,i1,1]'*X[i1,i2,2]*ar[i2,i2,1]-X[i1,i2,1]+q[i1,i2,1]   
@@ -271,24 +296,24 @@ rez1 = al[i1,i1,1]*X3[i1,i2,1]*ar[i2,i2,1]'-X3[i1,i2,2]+q[i1,i2,1]
 rez2 = al[i1,i1,2]*X3[i1,i2,2]*ar[i2,i2,2]'-X3[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7  
 
-al = 10*al; ar = 10*ar; 
-X = dpsylv2(REV, n1, n2, KSCHUR, al, ar, q, W, WX) 
+al1 = 100*al; ar1 = 100*ar; 
+X = dpsylv2(REV, n1, n2, KSCHUR, al1, ar1, q, W, WX) 
 i1 = 1:n1; i2 = 1:n2
-rez1 = al[i1,i1,1]'*X[i1,i2,2]*ar[i2,i2,1]-X[i1,i2,1]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]'*X[i1,i2,1]*ar[i2,i2,2]-X[i1,i2,2]+q[i1,i2,2]   
+rez1 = al1[i1,i1,1]'*X[i1,i2,2]*ar1[i2,i2,1]-X[i1,i2,1]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]'*X[i1,i2,1]*ar1[i2,i2,2]-X[i1,i2,2]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7         
-X = dpsylv2(!REV, n1, n2, KSCHUR, al, ar, q, W, WX) 
-rez1 = al[i1,i1,1]*X[i1,i2,1]*ar[i2,i2,1]'-X[i1,i2,2]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]*X[i1,i2,2]*ar[i2,i2,2]'-X[i1,i2,1]+q[i1,i2,2]   
+X = dpsylv2(!REV, n1, n2, KSCHUR, al1, ar1, q, W, WX) 
+rez1 = al1[i1,i1,1]*X[i1,i2,1]*ar1[i2,i2,1]'-X[i1,i2,2]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]*X[i1,i2,2]*ar1[i2,i2,2]'-X[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7         
 
-X1 = copy(q[i1,i2,1:p]); dpsylv2!(REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY) 
-rez1 = al[i1,i1,1]'*X1[i1,i2,2]*ar[i2,i2,1]-X1[i1,i2,1]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]'*X1[i1,i2,1]*ar[i2,i2,2]-X1[i1,i2,2]+q[i1,i2,2]   
+X1 = copy(q[i1,i2,1:p]); dpsylv2!(REV, n1, n2, KSCHUR, al1, ar1, X1, WZ, WY) 
+rez1 = al1[i1,i1,1]'*X1[i1,i2,2]*ar1[i2,i2,1]-X1[i1,i2,1]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]'*X1[i1,i2,1]*ar1[i2,i2,2]-X1[i1,i2,2]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7         
-X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al, ar, X1, WZ, WY) 
-rez1 = al[i1,i1,1]*X1[i1,i2,1]*ar[i2,i2,1]'-X1[i1,i2,2]+q[i1,i2,1]   
-rez2 = al[i1,i1,2]*X1[i1,i2,2]*ar[i2,i2,2]'-X1[i1,i2,1]+q[i1,i2,2]   
+X1 = copy(q[i1,i2,1:p]); dpsylv2!(!REV, n1, n2, KSCHUR, al1, ar1, X1, WZ, WY) 
+rez1 = al1[i1,i1,1]*X1[i1,i2,1]*ar1[i2,i2,1]'-X1[i1,i2,2]+q[i1,i2,1]   
+rez2 = al1[i1,i1,2]*X1[i1,i2,2]*ar1[i2,i2,2]'-X1[i1,i2,1]+q[i1,i2,2]   
 @test norm(rez1) < 1.e-7  && norm(rez2) < 1.e-7  
 
 
@@ -696,9 +721,55 @@ X = convert(PeriodicArray,X1)
 rez = [ Ad.M[:,:,ia[i]]*X.M[:,:,ipx[i]]*Ad.M[:,:,ia[i]]'-X.M[:,:,ipx1[i]]+Qd.M[:,:,ipc[i]] for i in ipx]
 @test norm(rez) < 1.e-7 
 
+# constant dimensions
+n = 5; pa = 1; pc = 1;     
+Ad = 0.5*PeriodicArray(rand(n,n,pa),pa);
+# q = rand(n,n,pc); [q[:,:,i] = q[:,:,i]'+q[:,:,i] for i in 1:pc];
+# Qd = PeriodicArray(q,pc);
+# pmsymadd!(Qd)
+Qd=pmsymadd!(pmrand(PeriodicArray,n,n,pc,ns=1))
+
+X = pdlyap(Ad, Qd, adj = true); 
+@test norm(Ad'*pmshift(X)*Ad-X+Qd) < 1.e-7 
+
+Y = pdlyap(Ad, Qd, adj = false); 
+@test norm(Ad*Y*Ad'-pmshift(Y)+Qd) < 1.e-7 
+
+Y1, X1 = pdlyap2(Ad,Qd,Qd)
+@test X ≈ X1 && Y ≈ Y1
+
+
 #pseig(Ad)
 
 n = 5; pa = 3; pc = 2;     
+Ad = 0.5*PeriodicArray(rand(Float64,n,n,pa),pa);
+q = rand(n,n,pc); [q[:,:,i] = q[:,:,i]'+q[:,:,i] for i in 1:pc];
+Qd = PeriodicArray(q,pc);
+
+X = prdlyap(Ad, Qd); 
+@test norm(Ad'*pmshift(X)*Ad-X+Qd) < 1.e-7 
+
+Y = pfdlyap(Ad, Qd) 
+@test norm(Ad*Y*Ad'-pmshift(Y)+Qd) < 1.e-7 
+
+p = lcm(pa,pc)
+X1 = zeros(n,n,p); Y1 = zeros(n,n,p); Xt = zeros(n,n); QW = zeros(n,n,p);
+PeriodicMatrixEquations.pslyapd!(X1, copy(Ad.M), copy(Qd.M), Xt, QW; adj = true) 
+PeriodicMatrixEquations.pslyapd!(Y1, copy(Ad.M), copy(Qd.M), Xt, QW; adj = false) 
+@test X1 ≈ X.M && Y1 ≈ Y.M
+
+T = Float64; N = p; 
+qr_ws = QRWs(zeros(8), zeros(4))
+#WORK1 = (Array{T,3}(undef, n, n, N), Array{T,3}(undef, n, n, N), Array{T,3}(undef, n, n, N), Matrix{T}(undef, n, n), Array{T,3}(undef,n,n,N), ws_pschur(Gt) )
+WORK2 = (Array{Float64,3}(undef,2,2,N), Array{Float64,3}(undef,4,4,N), Array{Float64,3}(undef,4,4,N),
+Matrix{Float64}(undef,4*N,4), Vector{Float64}(undef,4*N), Matrix{Float64}(undef,8,8),
+qr_ws, QROrmWs(zeros(4), qr_ws.τ))
+
+PeriodicMatrixEquations.pslyapd2!(Y1, X1, copy(Ad.M), copy(Qd.M), copy(Qd.M), Xt, QW, WORK2, ws_pschur(Ad.M))
+@test X1 ≈ X.M && Y1 ≈ Y.M
+
+
+n = 5; pa = 1; pc = 1;     
 Ad = 0.5*PeriodicArray(rand(Float64,n,n,pa),pa);
 q = rand(n,n,pc); [q[:,:,i] = q[:,:,i]'+q[:,:,i] for i in 1:pc];
 Qd = PeriodicArray(q,pc);
@@ -1035,6 +1106,16 @@ for adj in (false,true)
    @time pdlyaps3!(KSCHUR, a, copy(qs); adj); 
 end
 
+KSCHUR = 1
+p = 1; n = 5; pc = 1
+a = rand(n,n,p); q = rand(n,n,pc); x = rand(n,n,pc);
+a[:,:,1] = 0.01*schur(rand(n,n)).T; [a[:,:,i] = triu(a[:,:,i]) for i in 2:p]; 
+[q[:,:,i] = q[:,:,i]'*q[:,:,i] for i in 1:pc];
+qs = copy(q);
+@time pdlyaps3!(KSCHUR, a, copy(qs); adj = true)
+@time pdlyaps2!(KSCHUR, a, copy(qs); adj = true); 
+@time pdlyaps2!(KSCHUR, a, copy(qs); adj = true); 
+
 
 # benchmark
 # using BenchmarkTools
@@ -1167,6 +1248,39 @@ X = U'*U;
 n = 5; p = 2; m = 2; pa = 2; pc = 2; pb = 2; 
 Ad = PeriodicArray(0.1*rand(Float64,n,n,pa),pa);  
 Bd = PeriodicArray(rand(Float64,n,m,pb),pb); 
+Bc = rand(n,m)
+Cd = PeriodicArray(rand(Float64,p,n,pc),pc); 
+Cc = rand(p,n)
+# A*X*A' + B*B' =  σX, if adj = false, 
+U = pdplyap(Ad, Bd; adj = false)
+X = U*U'; 
+@test norm(Ad*X*Ad'-pmshift(X)+Bd*Bd') < 1.e-7 
+
+# A'σXA + C'*C = X, if adj = true,
+U = pdplyap(Ad, Cd; adj = true); 
+X = U'*U; 
+@test norm(Ad'*pmshift(X)*Ad-X+Cd'*Cd) < 1.e-7 
+
+U = pfdplyap(Ad, Bd)
+X = U*U'; 
+@test norm(Ad*X*Ad'-pmshift(X)+Bd*Bd') < 1.e-7 
+U = pfdplyap(Ad, Bc)
+X = U*U'; 
+@test norm(Ad*X*Ad'-pmshift(X)+Bc*Bc') < 1.e-7 
+
+# A'σXA + C'*C = X, if adj = true,
+U = prdplyap(Ad, Cd); 
+X = U'*U; 
+@test norm(Ad'*pmshift(X)*Ad-X+Cd'*Cd) < 1.e-7 
+U = prdplyap(Ad, Cc)
+X = U'*U; 
+@test norm(Ad'*pmshift(X)*Ad-X+Cc'*Cc) < 1.e-7 
+
+
+# constant dimensions
+n = 5; p = 2; m = 2; pa = 1; pc = 1; pb = 1; 
+Ad = PeriodicArray(0.1*rand(Float64,n,n,pa),pa);  
+Bd = PeriodicArray(rand(Float64,n,m,pb),pb); 
 Cd = PeriodicArray(rand(Float64,p,n,pc),pc); 
 # A*X*A' + B*B' =  σX, if adj = false, 
 U = pdplyap(Ad, Bd; adj = false)
@@ -1184,6 +1298,7 @@ X = U*U';
 U = prdplyap(Ad, Cd); 
 X = U'*U; 
 @test norm(Ad'*pmshift(X)*Ad-X+Cd'*Cd) < 1.e-7 
+
 
 
 
