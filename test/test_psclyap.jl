@@ -80,6 +80,11 @@ Xd = PeriodicFunctionMatrix(Xdot,2*pi)
 @time Yt1 = pclyap(At,Ct; K = 512, reltol = 1.e-12, abstol = 1.e-12,intpol=false);
 @test norm(Xt - Yt) < 1.e-7 && norm(Xt - Yt1) < 1.e-7  
 
+@time Yt = pclyap(At, Ct(0), K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
+@time Yt1 = pclyap(At,Ct(0); K = 512, reltol = 1.e-12, abstol = 1.e-12,intpol=false);
+@test norm(Yt1 - Yt) < 1.e-5  
+
+
 @time Yt1 = pclyap(At, Ct, K = 1, reltol = 1.e-12, abstol=1.e-12, intpol = false);
 @test Xt ≈ Yt1 && Xd ≈ pmderiv(Yt1) 
 
@@ -89,8 +94,17 @@ Xd = PeriodicFunctionMatrix(Xdot,2*pi)
 @time Yt = pfclyap(At, Ct, K = 500, reltol = 1.e-12, abstol=1.e-12);
 @test Xt ≈ Yt 
 
-@time Y = prclyap(At, Cdt, K = 500, reltol = 1.e-12, abstol=1.e-12)
+@time Yt = pfclyap(At, Ct(0), K = 500, intpol = true, reltol = 1.e-12, abstol=1.e-12);
+@time Yt1 = pfclyap(At, Ct(0), K = 500, intpol = false, reltol = 1.e-12, abstol=1.e-12);
+@test norm(Yt1.(ts) .- Yt.(ts),Inf) < 1.e-5 
+
+@time Yt = prclyap(At, Cdt, K = 500, reltol = 1.e-12, abstol=1.e-12)
 @test Xt ≈ Yt 
+
+@time Yt = prclyap(At, Cdt(0), K = 500, intpol = true, reltol = 1.e-12, abstol=1.e-12);
+@time Yt1 = prclyap(At, Cdt(0), K = 500, intpol = false, reltol = 1.e-12, abstol=1.e-12);
+@test norm(Yt1.(ts) .- Yt.(ts),Inf) < 1.e-5 
+
 
 @time Yt = pclyap(At,Ct*Ct'; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
 @time Ut = pcplyap(At,Ct; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
@@ -319,26 +333,33 @@ Xt2 = pclyap(Ats1, Cts1; K = 2000, reltol = 1.e-14, abstol = 1.e-14);
 # @test norm((Ats'*Yt+Yt*Ats+Cdts+pmderiv(Yt)).(ts)) < 1.e-5
 
 
-# # solve using periodic switching matrices
-# Asw = convert(PeriodicSwitchingMatrix,Ats)
-# Csw = convert(PeriodicSwitchingMatrix,Cts)
-# Cdsw = convert(PeriodicSwitchingMatrix,Cdts)
+# solve using periodic switching matrices
+Asw = convert(PeriodicSwitchingMatrix,Ats)
+Csw = convert(PeriodicSwitchingMatrix,Cts)
+Cdsw = convert(PeriodicSwitchingMatrix,Cdts)
 
 
-# ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.1998199838900527, 2.4360161318589695, 
-#      2.9004720268745463, 2.934294124172935, 4.149208861412936, 4.260935465730602, 5.956614157549958]
+ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.1998199838900527, 2.4360161318589695, 
+     2.9004720268745463, 2.934294124172935, 4.149208861412936, 4.260935465730602, 5.956614157549958]
 
-# @time Yt = pclyap(Asw, Csw; K = 2, reltol = 1.e-14, abstol = 1.e-14);
-# @test norm((Asw*Yt+Yt*Asw'+Csw-pmderiv(Yt)).(ts)) < 1.e-5 
+@time Yt = pclyap(Asw, Csw; K = 100, reltol = 1.e-14, abstol = 1.e-14);
+@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
 
 # @time Yt = pclyap(Asw, Cdsw; K = 2, adj = true, reltol = 1.e-14, abstol = 1.e-14)
 # @test norm((Asw'*Yt+Yt*Asw+Cdsw+pmderiv(Yt)).(ts)) < 1.e-5  
 
-# @time Yt = pfclyap(Asw, Csw; reltol = 1.e-14, abstol = 1.e-14);
-# @test norm((Asw*Yt+Yt*Asw'+Csw-pmderiv(Yt)).(ts)) < 1.e-5 
+@time Yt = pfclyap(Asw, Csw; K = 100, reltol = 1.e-14, abstol = 1.e-14);
+@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
 
-# @time Yt = prclyap(Asw, Cdsw; reltol = 1.e-14, abstol = 1.e-14)
-# @test norm((Asw'*Yt+Yt*Asw+Cdsw+pmderiv(Yt)).(ts)) < 1.e-5  
+@time Yt = pfclyap(Asw, Csw(0); K = 200, reltol = 1.e-14, abstol = 1.e-14);
+@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(0).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
+
+@time Yt = prclyap(Asw, Cdsw; K = 100, reltol = 1.e-14, abstol = 1.e-14);
+@test norm((Asw'.(ts).*Yt.(ts).+Yt.(ts).*Asw.(ts).+Cdsw.(ts).+pmderiv(Yt).(ts)),Inf) < 1.e-5 
+
+@time Yt = prclyap(Asw, Cdsw(0); K = 200, reltol = 1.e-14, abstol = 1.e-14);
+@test norm((Asw'.(ts).*Yt.(ts).+Yt.(ts).*Asw.(ts).+Cdsw.(0).+pmderiv(Yt).(ts)),Inf) < 1.e-5 
+
 
 
 A4(t) = [0  1; -cos(t)-1 -2-sin(t)]
@@ -359,7 +380,7 @@ ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.199819983890
 
 
 K = 500
-W0 = pgclyap(Ast, Cst, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+W0 = pgclyap(Ast, Cst, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
 Ts = 2pi/K
 success = true
 for i = 1:K
