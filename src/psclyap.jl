@@ -134,13 +134,13 @@ function prclyap(A::PM, C::PM; K::Int = 1, solver = "non-stiff", reltol = 1.e-4,
    pclyap(A, C; K, adj = true, solver, reltol, abstol)
 end
 function prclyap(A::PM, C::AbstractMatrix; kwargs...) where {PM <: PeriodicSwitchingMatrix}
-   prclyap(A, PM(C, A.period; nperiod = A.nperiod); kwargs...)
+   prclyap(A, PeriodicSwitchingMatrix(C, A.period; nperiod = A.nperiod); kwargs...)
 end
 function pfclyap(A::PM, C::PM; K::Int = 1, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7) where {PM <: PeriodicSwitchingMatrix}
    pclyap(A, C; K, adj = false, solver, reltol, abstol)
 end
 function pfclyap(A::PM, C::AbstractMatrix; kwargs...) where {PM <: PeriodicSwitchingMatrix}
-   pfclyap(A, PM(C, A.period; nperiod = A.nperiod); kwargs...)
+   pfclyap(A, PeriodicSwitchingMatrix(C, A.period; nperiod = A.nperiod); kwargs...)
 end
 
 """
