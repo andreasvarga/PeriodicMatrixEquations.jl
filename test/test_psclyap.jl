@@ -75,10 +75,19 @@ Ct = PeriodicFunctionMatrix(C,2*pi)
 Cdt = PeriodicFunctionMatrix(Cd,2*pi)
 Xt = PeriodicFunctionMatrix(X,2*pi)
 Xd = PeriodicFunctionMatrix(Xdot,2*pi)
+Ac = PeriodicFunctionMatrix(A(0),2*pi)
+Cc = PeriodicFunctionMatrix(C(0),2*pi)
+Cdc = PeriodicFunctionMatrix(Cd(0),2*pi)
 
 @time Yt = pclyap(At, Ct, K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
 @time Yt1 = pclyap(At,Ct; K = 512, reltol = 1.e-12, abstol = 1.e-12,intpol=false);
 @test norm(Xt - Yt) < 1.e-7 && norm(Xt - Yt1) < 1.e-7  
+
+@time Yt = pclyap(Ac, Cc, stability_check = true, K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
+@test norm(Yt*Ac'+Ac*Yt+Cc) < 1.e-7
+
+@time Yt = pclyap(Ac, Cdc, stability_check = true, adj = true, K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
+@test norm(Yt*Ac+Ac'*Yt+Cdc) < 1.e-7
 
 @time Yt = pclyap(At, Ct(0), K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
 @time Yt1 = pclyap(At,Ct(0); K = 512, reltol = 1.e-12, abstol = 1.e-12,intpol=false);
@@ -172,6 +181,24 @@ for i = 1:K
     success = success && norm(Y-W0.values[iw]) < 1.e-7
 end
 @test success
+
+@time W1 = pgclyap(At, Cdt, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(At, Ct, Cdt, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test X0 ≈ W0 && Y0 ≈ W1
+
+@time W0 = pgclyap(Ac, Cc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test X0 ≈ W0 && Y0 ≈ W1
+
+@time W1 = pgclyap(At, Cdt, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(At, Ct(0), Cdt, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test Y0 ≈ W1
+
+@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test Y0 ≈ W1
+
 
 K = 10
 @time W0 = pgclyap(At, Ct, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);

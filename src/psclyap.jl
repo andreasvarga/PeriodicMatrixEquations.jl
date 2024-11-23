@@ -291,13 +291,13 @@ end
 
 Compute the solutions of the periodic differential Lyapunov equations
 
-     -
+     .
      X(t) = A(t)*X(t) + X(t)*A'(t) + C(t)
 
 and 
 
      .
-    -Y(t) = A(t)'Y(t) + Y(t)A(t) + E(t).
+    -Y(t) = A(t)'*Y(t) + Y(t)*A(t) + E(t).
     
 The periodic matrices `A`, `C` and `E` must have the same dimensions, the same type and 
 commensurate periods. Additionally `C` and `E` must be symmetric.  
@@ -355,6 +355,8 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
    Ts = period/K/nperiod
    solver == "symplectic" && dt == 0 && (dt = K >= 100 ? Ts : Ts*K/100/nperiod)
    
+   T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
+   T == Num && (T = Float64)
    if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) && PeriodicMatrices.isconstant(E)
       if stability_check
          ev = eigvals(tpmeval(A,0))
@@ -363,8 +365,6 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
       X, Y = lyapc(tpmeval(A,0), tpmeval(C,0)),  lyapc(tpmeval(A,0)', tpmeval(E,0))
       #X, Y = MatrixEquations.lyapc2(tpmeval(A,0), tpmeval(C,0), tpmeval(E,0))
    else
-      T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
-      T == Num && (T = Float64)
       if stability_check
          ev = K < 100 ? PeriodicMatrices.pseig(A,100) : PeriodicMatrices.pseig(A,K)
          maximum(abs.(ev)) >= one(T) - sqrt(eps(T)) && error("system stability check failed")  
@@ -376,11 +376,11 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
       Threads.@threads for i = 1:Ka
          @inbounds Ad[:,:,i] = tvstm(A, i*Ts, (i-1)*Ts; solver, reltol, abstol) 
       end
-      Threads.@threads for i = K:-1:1
-         @inbounds Cd[:,:,i]  = tvclyap(A, C, (i-1)*Ts, i*Ts; adj = false, solver, reltol, abstol, dt) 
-      end
       Threads.@threads for i = 1:K
-         @inbounds Ed[:,:,i]  = tvclyap(A, E, i*Ts, (i-1)*Ts; adj = true, solver, reltol, abstol, dt) 
+         @inbounds Cd[:,:,i]  = tvclyap(A, C, i*Ts, (i-1)*Ts; adj = false, solver, reltol, abstol, dt) 
+      end
+      Threads.@threads for i = K:-1:1
+         @inbounds Ed[:,:,i]  = tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol, dt) 
       end
       X, Y = pslyapd2(Ad, Cd, Ed)
    end
@@ -454,18 +454,18 @@ function pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::Int = 1; solver = "non-s
    Ts = period/K/nperiod
    solver == "symplectic" && dt == 0 && (dt = K >= 100 ? Ts : Ts*K/100/nperiod)
    
+   T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
+   T == Num && (T = Float64)
    if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(E)
       A0 = tpmeval(A,0)
       if stability_check
          ev = eigvals(A0)
-         maximum(real.(ev)) >= - sqrt(eps(eltype(A))) && error("system stability check failed")  
+         maximum(real.(ev)) >= - sqrt(eps(T)) && error("system stability check failed")  
       end 
       Ad = exp(A0*period)
       X = lyapd(Ad,C)
       Y = lyapc(A0', tpmeval(E,0))
    else
-      T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
-      T == Num && (T = Float64)
       if stability_check
          ev = K < 100 ? PeriodicMatrices.pseig(A,100) : PeriodicMatrices.pseig(A,K)
          maximum(abs.(ev)) >= one(T) - sqrt(eps(T)) && error("system stability check failed")  
