@@ -587,6 +587,7 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
    Tsd = Δ/K
    Ts = Δ
    δ = Tsd/2
+   T = promote_type(eltype(A),eltype(C),Float64)
    if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C)
       if stability_check
          ev = eigvals(tpmeval(A,0))
@@ -595,7 +596,6 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
       X = adj ? lyapc(tpmeval(A,0)', tpmeval(C,0)) :  lyapc(tpmeval(A,0), tpmeval(C,0))
       return PeriodicTimeSeriesMatrix([X], period; nperiod)
    else
-      T = promote_type(eltype(A),eltype(C),Float64)
       Ka = PeriodicMatrices.isconstant(A) ? 1 : Kc
       Kc1 = Kc*K
       Ad = Array{T,3}(undef, n, n, Ka*K) 

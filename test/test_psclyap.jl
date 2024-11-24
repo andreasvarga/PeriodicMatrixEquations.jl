@@ -199,6 +199,10 @@ end
 @time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
 @test Y0 ≈ W1
 
+@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(Ac, Cc(0), Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test Y0 ≈ W1
+
 
 K = 10
 @time W0 = pgclyap(At, Ct, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
@@ -302,6 +306,9 @@ K = 512
 Ats = convert(PeriodicTimeSeriesMatrix,At;ns = K);
 Cts = convert(PeriodicTimeSeriesMatrix,Ct;ns = K);
 Cdts = convert(PeriodicTimeSeriesMatrix,Cdt;ns = K);
+Atsc = convert(PeriodicTimeSeriesMatrix,Ac;ns = K);
+Ctsc = convert(PeriodicTimeSeriesMatrix,Cc;ns = K);
+
 ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.1998199838900527, 2.4360161318589695, 
      2.9004720268745463, 2.934294124172935, 4.149208861412936, 4.260935465730602, 5.956614157549958]
 
@@ -329,6 +336,15 @@ Xt1 = pclyap(Ats1, Cts1; K = 10, reltol = 1.e-14, abstol = 1.e-14);
 Xt2 = pclyap(Ats1, Cts1; K = 2000, reltol = 1.e-14, abstol = 1.e-14);
 @test norm((Ats1*Xt2+Xt2*Ats1'+Cts1-pmderiv(Xt2)).(ts)) < 1.e-5 
 #@test norm((Xt1-Xt2).(ts)) < 1.e-7
+
+K = 512
+W0 = pgclyap(Ats, Cts, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@test norm((Ats*Xts+Xts*Ats'+Cts-pmderiv(Xts)).(ts)) < 1.e-6
+
+W0 = pgclyap(Atsc, Ctsc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Atsc, Ctsc; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@test norm((Atsc*Xts+Xts*Atsc'+Ctsc-pmderiv(Xts)).(ts)) < 1.e-6
 
 # K = 1000;
 # Ats2 = convert(PeriodicTimeSeriesMatrix,At;ns = K);
@@ -374,14 +390,14 @@ ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.199819983890
 @time Yt = pclyap(Asw, Csw; K = 100, reltol = 1.e-14, abstol = 1.e-14,stability_check=true);
 @test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
 
-@time Yt = pclyap(Asw, Csw; K = 100, reltol = 1.e-14, abstol = 1.e-14,stability_check=true);
-@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
+@time Yt = pclyap(Aswc, Cswc; K = 100, reltol = 1.e-14, abstol = 1.e-14,stability_check=true);
+@test norm((Aswc.(ts).*Yt.(ts).+Yt.(ts).*Aswc'.(ts).+Cswc.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
 
 # @time Yt = pclyap(Asw, Cdsw; K = 2, adj = true, reltol = 1.e-14, abstol = 1.e-14)
 # @test norm((Asw'*Yt+Yt*Asw+Cdsw+pmderiv(Yt)).(ts)) < 1.e-5  
 
-@time Yt = pfclyap(Aswc, Cswc; K = 100, reltol = 1.e-14, abstol = 1.e-14);
-@test norm((Aswc.(ts).*Yt.(ts).+Yt.(ts).*Aswc'.(ts).+Cswc.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
+@time Yt = pfclyap(Asw, Csw; K = 100, reltol = 1.e-14, abstol = 1.e-14);
+@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
 
 @time Yt = pfclyap(Asw, Csw(0); K = 200, reltol = 1.e-14, abstol = 1.e-14);
 @test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(0).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
