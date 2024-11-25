@@ -500,6 +500,7 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
    ts = unique(sort([A.ts;C.ts]))
    Kc = length(ts)
   
+   T = promote_type(eltype(A),eltype(C),Float64)
    if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C)
       if stability_check
          ev = eigvals(tpmeval(A,0))
@@ -508,7 +509,6 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
       X = adj ? lyapc(tpmeval(A,0)', tpmeval(C,0)) :  lyapc(tpmeval(A,0), tpmeval(C,0))
       return PeriodicSwitchingMatrix([X], ts, period; nperiod)
    else
-      T = promote_type(eltype(A),eltype(C),Float64)
       Ka = PeriodicMatrices.isconstant(A) ? 1 : Kc
       Kc1 = Kc*K
       Ad = Array{T,3}(undef, n, n, Ka*K) 
@@ -1047,6 +1047,7 @@ function pcplyap(A::HarmonicArray, C::HarmonicArray; K::Int = 10, adj = false, s
    convert(HarmonicArray, pgcplyap(A,  C, K;  adj, solver, reltol, abstol))
 end
 function pcplyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
+   @show "here"
    pgcplyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol)
 end
 for PM in (:PeriodicFunctionMatrix, :PeriodicSymbolicMatrix, :HarmonicArray, :PeriodicTimeSeriesMatrix)
@@ -1292,7 +1293,7 @@ function pseig3(A::Array{T,3}; rev::Bool = true, fast::Bool = false) where T
          ev = eigvals(psreduc_reg(view(A,imap))...)
       end
       isreal(ev) && (ev = real(ev))
-      sorteigvals!(ev)
+      PeriodicMatrices.sorteigvals!(ev)
       return sort!(ev,by=abs,rev=true)
    else
       T1 = promote_type(Float64,T)
