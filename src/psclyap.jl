@@ -1046,11 +1046,12 @@ end
 function pcplyap(A::HarmonicArray, C::HarmonicArray; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
    convert(HarmonicArray, pgcplyap(A,  C, K;  adj, solver, reltol, abstol))
 end
-function pcplyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
-   @show "here"
-   pgcplyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol)
-end
-for PM in (:PeriodicFunctionMatrix, :PeriodicSymbolicMatrix, :HarmonicArray, :PeriodicTimeSeriesMatrix)
+# function pcplyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
+#    println("This function is not available for PeriodicTimeSeriesMatrix type")
+#    return nothing
+#    # pgcplyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol)
+# end
+for PM in (:PeriodicFunctionMatrix, :PeriodicSymbolicMatrix, :HarmonicArray)
    @eval begin
       function prcplyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7) 
          pcplyap(A, C; K, adj = true, solver, reltol, abstol)
@@ -1062,7 +1063,7 @@ for PM in (:PeriodicFunctionMatrix, :PeriodicSymbolicMatrix, :HarmonicArray, :Pe
          pcplyap(A, C; K, adj = false, solver, reltol, abstol)
       end
       function pfcplyap(A::$PM, C::AbstractMatrix; kwargs...)
-         pfcpyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+         pfcplyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
       end
    end
 end
@@ -1196,6 +1197,13 @@ function pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol =
    end
    return PeriodicTimeSeriesMatrix([U[:,:,i] for i in 1:size(U,3)], period; nperiod)
 end
+# function pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol = 1e-7, abstol = 1e-7, dt = 0) where
+#    {PM1 <: PeriodicTimeSeriesMatrix, PM2 <: PeriodicTimeSeriesMatrix} 
+#    println("This function is not available for PeriodicTimeSeriesMatrix type")
+#    return nothing
+#    #return pgcplyap(convert(PeriodicFunctionMatrix,A;method="constant"), convert(PeriodicFunctionMatrix,C;method = "constant"), K; adj, solver, reltol, abstol, dt) 
+# end
+
 """
      tvcplyap_eval(t, U, A, C; adj = false, solver, reltol, abstol, dt) -> Uval
 

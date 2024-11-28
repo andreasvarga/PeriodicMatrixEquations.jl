@@ -80,7 +80,7 @@ Cc = PeriodicFunctionMatrix(C(0),2*pi)
 Cdc = PeriodicFunctionMatrix(Cd(0),2*pi)
 
 Ad = monodromy(At,100)
-@test PeriodicMatrixEquations.pseig3(Ad.M) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true)
+@test PeriodicMatrixEquations.pseig3(Ad.M) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true,rev = true)
 
 @time Yt = pclyap(At, Ct, K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
 @time Yt1 = pclyap(At,Ct; K = 512, reltol = 1.e-12, abstol = 1.e-12,intpol=false);
@@ -121,6 +121,9 @@ Ad = monodromy(At,100)
 @time Yt = pclyap(At,Ct*Ct'; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
 @time Ut = pcplyap(At,Ct; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
 @test Ut*Ut' ≈ Yt 
+@time Ut1 = pfcplyap(At,Ct; K = 512, reltol = 1.e-14, abstol = 1.e-14);
+@test Ut1*Ut1' ≈ Yt 
+
 
 @time Yt = pclyap(At,Ct*Ct'; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
 @time Ut = pcplyap(At,Ct; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
@@ -130,6 +133,8 @@ Ad = monodromy(At,100)
 @time Yt = pclyap(At,Ct'*Ct; adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
 @time Ut = pcplyap(At,Ct; adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
 @test Ut'*Ut ≈ Yt 
+@time Ut1 = prcplyap(At,Ct; K = 512, reltol = 1.e-14, abstol = 1.e-14);
+@test Ut1'*Ut1 ≈ Yt 
 
 @time Yt = pclyap(At,Ct'*Ct; adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
 @time Ut = pcplyap(At,Ct; adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
@@ -139,9 +144,17 @@ Ad = monodromy(At,100)
 @time Ut = pcplyap(Ac,Cc; adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
 @test all(norm.(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) .< 1.e-5) 
 
+@time Yt = pclyap(At,(Ct*Ct')(0); adj = false, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
+@time Ut = pcplyap(At,Ct(0); adj = false, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
+@test all(norm.(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) .< 1.e-5) 
+@time Ut1 = pfcplyap(At,Ct(0); K = 512, reltol = 1.e-14, abstol = 1.e-14);
+@test all(norm.(Ut1.(ts).*Ut1'.(ts).-Yt.(ts),Inf) .< 1.e-5) 
+
 @time Yt = pclyap(At,(Ct'*Ct)(0); adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
 @time Ut = pcplyap(At,Ct(0); adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
 @test all(norm.(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) .< 1.e-5) 
+@time Ut1 = prcplyap(At,Ct(0); K = 512, reltol = 1.e-14, abstol = 1.e-14);
+@test all(norm.(Ut1'.(ts).*Ut1.(ts).-Yt.(ts),Inf) .< 1.e-5) 
 
 
 
