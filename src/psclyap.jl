@@ -1298,7 +1298,7 @@ function pseig3(A::Array{T,3}; rev::Bool = true, fast::Bool = false) where T
          ev = eigvals(psreduc_reg(A)...)
       else
          imap = p:-1:1                     
-         ev = eigvals(psreduc_reg(view(A,imap))...)
+         ev = eigvals(psreduc_reg(view(A,:,:,imap))...)
       end
       isreal(ev) && (ev = real(ev))
       PeriodicMatrices.sorteigvals!(ev)

@@ -80,7 +80,8 @@ Cc = PeriodicFunctionMatrix(C(0),2*pi)
 Cdc = PeriodicFunctionMatrix(Cd(0),2*pi)
 
 Ad = monodromy(At,100)
-@test PeriodicMatrixEquations.pseig3(Ad.M) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true,rev = true)
+@test PeriodicMatrixEquations.pseig3(Ad.M) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true) &&
+      PeriodicMatrixEquations.pseig3(Ad.M,rev=false) ≈ PeriodicMatrixEquations.pseig3(Ad.M,fast=true,rev = false)
 
 @time Yt = pclyap(At, Ct, K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
 @time Yt1 = pclyap(At,Ct; K = 512, reltol = 1.e-12, abstol = 1.e-12,intpol=false);
@@ -353,29 +354,81 @@ Yh = convert(HarmonicArray,Yt);
 @time Yt = prclyap(Ah, Cdh, K = 500, reltol = 1.e-10, abstol = 1.e-10);
 Yh = convert(HarmonicArray,Yt);
 @test Xh ≈ Yh 
-# # solve using Fourier function matrices
-# Af = convert(FourierFunctionMatrix,At);
-# Cf = convert(FourierFunctionMatrix,Ct); 
-# Cdf = convert(FourierFunctionMatrix,Cdt)
-# Xf = convert(FourierFunctionMatrix,Xt);
-# Xdf = convert(FourierFunctionMatrix,Xd);
 
-# @time Yt = pclyap(Af, Cf, K = 500, reltol = 1.e-10, abstol = 1.e-10);
-# @time Yt1 = pclyap(Af,Cf; K = 512, reltol = 1.e-10, abstol = 1.e-10,intpol=true);
-# Yf = convert(FourierFunctionMatrix,Yt);
-# @test Xf ≈ Yf && Xdf ≈ pmderiv(Yf) && norm(Af*Yf+Yf*Af'+Cf-pmderiv(Yf)) < 1.e-7 && norm(Yt1-Yt) < 1.e-7
+# solve using Fourier function matrices
+Af = convert(FourierFunctionMatrix,At);
+Cf = convert(FourierFunctionMatrix,Ct); 
+Cdf = convert(FourierFunctionMatrix,Cdt)
+Xf = convert(FourierFunctionMatrix,Xt);
+Xdf = convert(FourierFunctionMatrix,Xd);
+Afc = convert(FourierFunctionMatrix,Ac);
+Cfc = convert(FourierFunctionMatrix,Cc); 
+Cdfc = convert(FourierFunctionMatrix,Cdc);
 
-# @time Yt = pclyap(Af, Cdf, K = 500, adj = true, reltol = 1.e-10, abstol = 1.e-10)
-# Yf = convert(FourierFunctionMatrix,Yt);
-# @test Xf ≈ Yf && Xdf ≈ pmderiv(Yf) && norm(Af'*Yf+Yf*Af+Cdf+pmderiv(Yf)) < 1.e-7
 
-# @time Yt = pfclyap(Af, Cf, K = 500, reltol = 1.e-10, abstol = 1.e-10);
-# Yf = convert(FourierFunctionMatrix,Yt);
-# @test Xf ≈ Yf && norm(Af*Yf+Yf*Af'+Cf-pmderiv(Yf)) < 1.e-7
+@time Yt = pclyap(Af, Cf, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@time Yt1 = pclyap(Af,Cf; K = 512, reltol = 1.e-10, abstol = 1.e-10,intpol=true);
+Yf = convert(FourierFunctionMatrix,Yt);
+@test Xf ≈ Yf && Xdf ≈ pmderiv(Yf) && norm(Af*Yf+Yf*Af'+Cf-pmderiv(Yf)) < 1.e-7 && norm(Yt1-Yt) < 1.e-7
 
-# @time Yt = prclyap(Af, Cdf, K = 500, reltol = 1.e-10, abstol = 1.e-10)
-# Yf = convert(FourierFunctionMatrix,Yt);
-# @test Xf ≈ Yf && norm(Af'*Yf+Yf*Af+Cdf+pmderiv(Yf)) < 1.e-7
+@time Yt = pclyap(Af, Cdf, K = 500, adj = true, reltol = 1.e-10, abstol = 1.e-10)
+Yf = convert(FourierFunctionMatrix,Yt);
+@test Xf ≈ Yf && Xdf ≈ pmderiv(Yf) && norm(Af'*Yf+Yf*Af+Cdf+pmderiv(Yf)) < 1.e-7
+
+@time Yt = pfclyap(Af, Cf, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+Yf = convert(FourierFunctionMatrix,Yt);
+@test Xf ≈ Yf && norm(Af*Yf+Yf*Af'+Cf-pmderiv(Yf)) < 1.e-7
+
+@time Yt = prclyap(Af, Cdf, K = 500, reltol = 1.e-10, abstol = 1.e-10)
+Yf = convert(FourierFunctionMatrix,Yt);
+@test Xf ≈ Yf && norm(Af'*Yf+Yf*Af+Cdf+pmderiv(Yf)) < 1.e-7
+
+@time Yt = pclyap(Af,Cf'*Cf; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@time Ut = pcplyap(Af,Cf; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@test all(norm.(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) .< 1.e-5) 
+
+@time Yt = prclyap(Af,Cf(0)'*Cf(0); K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@time Ut = prcplyap(Af,Cf(0); K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@test all(norm.(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) .< 1.e-5) 
+
+@time Yt = pclyap(Af,Cdf*Cdf'; adj = false, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@time Ut = pcplyap(Af,Cdf; adj = false, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@test all(norm.(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) .< 1.e-5) 
+
+@time Yt = pfclyap(Af,Cdf(0)*Cdf(0)'; K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@time Ut = pfcplyap(Af,Cdf(0); K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@test all(norm.(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) .< 1.e-4) 
+
+K = 500
+@time W0 = pgclyap(Af, Cf, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+Ts = 2pi/K
+success = true
+for i = 1:K
+    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    iw = i+1; iw > K && (iw = 1)
+    success = success && norm(Y-W0.values[iw]) < 1.e-7
+end
+@test success
+
+@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(Af, Cf, Cdf, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test X0 ≈ W0 && Y0 ≈ W1
+
+@time W0 = pgclyap(Afc, Cfc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time W1 = pgclyap(Afc, Cdfc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(Afc, Cfc, Cdfc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@test X0 ≈ W0 && Y0 ≈ W1
+
+@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time X0, Y0  = pgclyap2(Af, Cf(0), Cdf, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Af, Cdf; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@test all( norm.((Af'.(ts).*YYt.(ts).+YYt.(ts).*Af.(ts).+Cdf.(ts).+pmderiv(YYt).(ts)),Inf) .< 1.e-5)  
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Af, Cf(0); solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@test  all(norm.((Af'.(ts).*YYt.(ts).+YYt.(ts).*Af.(ts).+Cdf.(ts).+pmderiv(YYt).(ts)),Inf).< 1.e-5) 
+@test Y0 ≈ W1
+# @time X1, Y1  = pgclyap2(-Af', -Cf(0), -Cdf, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+# XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, -X1, Af, Cf(0); solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+# @test all(norm.((Af'.(ts).*XXt.(ts).+XXt.(ts).*Af.(ts).+pmderiv(XXt).(ts)),Inf) .< 1.e-5)  
 
 
 # solve using periodic time-series matrices

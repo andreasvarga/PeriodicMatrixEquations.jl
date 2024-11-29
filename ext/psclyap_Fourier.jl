@@ -66,11 +66,12 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function pclyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
-   if intpol
-      return convert(PeriodicFunctionMatrix,pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
+#function pclyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
+function PeriodicMatrixEquations.pclyap(A::PM, C::PM; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false) where {PM <: FourierFunctionMatrix}
+      if intpol
+      return convert(PeriodicFunctionMatrix,PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
    else
-      W0 = pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
+      W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
    end
    #convert(FourierFunctionMatrix, pgclyap(A,  C, K;  adj, solver, reltol, abstol))
@@ -79,17 +80,19 @@ end
 
 for PM in (FourierFunctionMatrix, )
    @eval begin
-      function prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
-         pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol, intpolmeth)
+      function PeriodicMatrixEquations.prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
+         PeriodicMatrixEquations.pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol, intpolmeth)
       end
-      function prclyap(A::$PM, C::AbstractMatrix; kwargs...)
-         prclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+      function PeriodicMatrixEquations.prclyap(A::$PM, C::AbstractMatrix; kwargs...)
+         #prclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+         PeriodicMatrixEquations.prclyap(A, $PM(C, A.period); kwargs...)
       end
-      function pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
-         pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol, intpolmeth)
+      function PeriodicMatrixEquations.pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
+         PeriodicMatrixEquations.pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol, intpolmeth)
       end
-      function pfclyap(A::$PM, C::AbstractMatrix; kwargs...)
-         pfclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+      function PeriodicMatrixEquations.pfclyap(A::$PM, C::AbstractMatrix; kwargs...)
+         #PeriodicMatrixEquations.pfclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+         PeriodicMatrixEquations.pfclyap(A, $PM(C, A.period); kwargs...)
       end
    end
 end
@@ -158,7 +161,7 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
+function PeriodicMatrixEquations.pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
       {PM1 <: FourierFunctionMatrix, PM2 <:FourierFunctionMatrix} 
    K > 0 || throw(ArgumentError("number of grid ponts K must be greater than 0, got K = $K"))    
    period = promote_period(A, C)
@@ -190,12 +193,12 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
       end 
       if adj
          Threads.@threads for i = K:-1:1
-            @inbounds Cd[:,:,i]  = tvclyap(A, C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol, dt) 
+            @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol, dt) 
          end
          X = pslyapd(Ad, Cd; adj)
       else
          Threads.@threads for i = 1:K
-               @inbounds Cd[:,:,i]  = tvclyap(A, C, i*Ts, (i-1)*Ts; adj, solver, reltol, abstol, dt) 
+               @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, i*Ts, (i-1)*Ts; adj, solver, reltol, abstol, dt) 
          end
          X = pslyapd(Ad, Cd; adj)
       end
@@ -259,7 +262,7 @@ _References_
 [2] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
     Int. J. Control, vol, 67, pp, 69-87, 1997.  
 """
-function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
+function PeriodicMatrixEquations.pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
       {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix, PM3 <: FourierFunctionMatrix}
    K > 0 || throw(ArgumentError("number of grid ponts K must be greater than 0, got K = $K"))    
    period = promote_period(A, C, E)
@@ -271,6 +274,8 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
    Ts = period/K/nperiod
    solver == "symplectic" && dt == 0 && (dt = K >= 100 ? Ts : Ts*K/100/nperiod)
    
+   T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
+   T == Num && (T = Float64)
    if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) && PeriodicMatrices.isconstant(E)
       if stability_check
          ev = eigvals(tpmeval(A,0))
@@ -279,8 +284,6 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
       X, Y = lyapc(tpmeval(A,0), tpmeval(C,0)),  lyapc(tpmeval(A,0)', tpmeval(E,0))
       #X, Y = MatrixEquations.lyapc2(tpmeval(A,0), tpmeval(C,0), tpmeval(E,0))
    else
-      T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
-      T == Num && (T = Float64)
       if stability_check
          ev = K < 100 ? PeriodicMatrices.pseig(A,100) : PeriodicMatrices.pseig(A,K)
          maximum(abs.(ev)) >= one(T) - sqrt(eps(T)) && error("system stability check failed")  
@@ -292,11 +295,11 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
       Threads.@threads for i = 1:Ka
          @inbounds Ad[:,:,i] = tvstm(A, i*Ts, (i-1)*Ts; solver, reltol, abstol) 
       end
-      Threads.@threads for i = K:-1:1
-         @inbounds Cd[:,:,i]  = tvclyap(A, C, (i-1)*Ts, i*Ts; adj = false, solver, reltol, abstol, dt) 
-      end
       Threads.@threads for i = 1:K
-         @inbounds Ed[:,:,i]  = tvclyap(A, E, i*Ts, (i-1)*Ts; adj = true, solver, reltol, abstol, dt) 
+         @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, i*Ts, (i-1)*Ts; adj = false, solver, reltol, abstol, dt) 
+      end
+      Threads.@threads for i = K:-1:1
+         @inbounds Ed[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol, dt) 
       end
       X, Y = pslyapd2(Ad, Cd, Ed)
    end
@@ -359,7 +362,7 @@ _References_
 [2] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
     Int. J. Control, vol, 67, pp, 69-87, 1997.  
 """
-function pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
+function PeriodicMatrixEquations.pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
       {PM1 <: FourierFunctionMatrix, PM3 <: FourierFunctionMatrix}
    K > 0 || throw(ArgumentError("number of grid ponts K must be greater than 0, got K = $K"))    
    period = promote_period(A, E)
@@ -395,7 +398,7 @@ function pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::Int = 1; solver = "non-s
       end
       copyto!(view(Cd,:,:,K),C)
       Threads.@threads for i = K:-1:1
-         @inbounds Ed[:,:,i]  = tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol, dt) 
+         @inbounds Ed[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol, dt) 
       end
       X, Y = pslyapd2(Ad, Cd, Ed)
    end
@@ -437,7 +440,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 `solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 """
-function tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    tsub = X.period/X.nperiod
    ns = length(X.values)
@@ -457,9 +460,9 @@ function tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = 
       ind == 0 && (ind = 1) 
       t0 = (ind-1)*Δ
    end
-   return tvclyap(A, C, tf, t0, X.values[ind]; adj, solver, reltol, abstol, dt) 
+   return PeriodicMatrixEquations.tvclyap(A, C, tf, t0, X.values[ind]; adj, solver, reltol, abstol, dt) 
 end
-function tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, X0::AbstractMatrix; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, X0::AbstractMatrix; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: FourierFunctionMatrix} 
    tsub = X.period/X.nperiod
    ns = length(X.values)
@@ -480,10 +483,10 @@ function tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, X0::AbstractMa
       t0 = (ind-1)*Δ
    end
    #@show tf, t0
-   return tvclyap(A, PM1(zeros(eltype(X0),size(X0)...),A.period), tf, t0, X.values[ind]; adj, solver, reltol, abstol, dt) 
+   return PeriodicMatrixEquations.tvclyap(A, FourierFunctionMatrix(zeros(eltype(X0),size(X0)...),A.period), tf, t0, X.values[ind]; adj, solver, reltol, abstol, dt) 
 end
 
-function tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = missing; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = missing; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
@@ -508,7 +511,7 @@ function tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = mis
    # using OrdinaryDiffEq
    ismissing(W0) ? u0 = zeros(T,div(n*(n+1),2)) : u0 = MatrixEquations.triu2vec(W0)
    tspan = (T(t0),T(tf))
-   fclyap!(du,u,p,t) = adj ? muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
+   fclyap!(du,u,p,t) = adj ? PeriodicMatrixEquations.muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : PeriodicMatrixEquations.muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
    prob = ODEProblem(fclyap!, u0, tspan)
    if solver == "stiff" 
       if reltol > 1.e-4  
@@ -548,7 +551,7 @@ function tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = mis
    end
    return MatrixEquations.vec2triu(sol.u[end], her=true)     
 end
-function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: FourierFunctionMatrix, PM2 <:FourierFunctionMatrix} 
    #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
@@ -574,7 +577,7 @@ function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = f
    # using OrdinaryDiffEq
    u0 = MatrixEquations.triu2vec(W0)
    tspan = adj ? (ts[end], ts[1]) : (ts[1], ts[end]) 
-   fclyap!(du,u,p,t) = adj ? muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
+   fclyap!(du,u,p,t) = adj ? PeriodicMatrixEquations.muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : PeriodicMatrixEquations.muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
    prob = ODEProblem(fclyap!, u0, tspan)
    if solver == "stiff" 
       if reltol > 1.e-4  
@@ -614,7 +617,7 @@ function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = f
    end
    return MatrixEquations.vec2triu.(sol(ts).u, her=true)     
 end
-function tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
@@ -653,7 +656,7 @@ function tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "", r
    # using OrdinaryDiffEq
    u0 = MatrixEquations.triu2vec(W0)
    tspan = adj ? (period, zero(T)) : (zero(T), period) 
-   fclyap!(du,u,p,t) = adj ? muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
+   fclyap!(du,u,p,t) = adj ? PeriodicMatrixEquations.muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : PeriodicMatrixEquations.muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
    prob = ODEProblem(fclyap!, u0, tspan)
    if solver == "stiff" 
       if reltol > 1.e-4  
@@ -762,22 +765,24 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function pcplyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
-   convert(FourierFunctionMatrix, pgcplyap(A,  C, K;  adj, solver, reltol, abstol))
+function PeriodicMatrixEquations.pcplyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
+   convert(FourierFunctionMatrix, PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol))
 end
 for PM in (:FourierFunctionMatrix, )
    @eval begin
-      function prcplyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7) 
-         pcplyap(A, C; K, adj = true, solver, reltol, abstol)
+      function PeriodicMatrixEquations.prcplyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7) 
+         PeriodicMatrixEquations.pcplyap(A, C; K, adj = true, solver, reltol, abstol)
       end
-      function prcplyap(A::$PM, C::AbstractMatrix; kwargs...)
-               prcplyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+      function PeriodicMatrixEquations.prcplyap(A::$PM, C::AbstractMatrix; kwargs...)
+         #PeriodicMatrixEquations.prcplyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+         PeriodicMatrixEquations.prcplyap(A, $PM(C, A.period); kwargs...)
       end
-      function pfcplyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7) 
-         pcplyap(A, C; K, adj = false, solver, reltol, abstol)
+      function PeriodicMatrixEquations.pfcplyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7) 
+         PeriodicMatrixEquations.pcplyap(A, C; K, adj = false, solver, reltol, abstol)
       end
-      function pfcplyap(A::$PM, C::AbstractMatrix; kwargs...)
-         pfcpyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+      function PeriodicMatrixEquations.pfcplyap(A::$PM, C::AbstractMatrix; kwargs...)
+         #PeriodicMatrixEquations.pfcpyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
+         PeriodicMatrixEquations.pfcplyap(A, $PM(C, A.period); kwargs...)
       end
    end
 end
@@ -838,7 +843,7 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol = 1e-7, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol = 1e-7, abstol = 1e-7, dt = 0) where
       {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    period = promote_period(A, C)
    na = Int(round(period/A.period))
@@ -861,7 +866,7 @@ function pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol =
       if adj
          #Threads.@threads for i = K:-1:1
          for i = K:-1:1
-             Xd = tvclyap(A, C'*C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol, dt) 
+             Xd = PeriodicMatrixEquations.tvclyap(A, C'*C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol, dt) 
              Fd = cholesky(Xd, RowMaximum(), check = false)
              Cd[:,:,i] = [Fd.U[1:Fd.rank, invperm(Fd.p)]; zeros(T,n-Fd.rank,n)]
          end
@@ -869,7 +874,7 @@ function pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol =
       else
          #Threads.@threads for i = 1:K
          for i = 1:K
-             Xd = tvclyap(A, C*C', i*Ts, (i-1)*Ts; adj, reltol, abstol, dt) 
+             Xd = PeriodicMatrixEquations.tvclyap(A, C*C', i*Ts, (i-1)*Ts; adj, reltol, abstol, dt) 
              Fd = cholesky(Xd, RowMaximum(), check = false)
              Cd[:,:,i] = [Fd.L[invperm(Fd.p), 1:Fd.rank] zeros(T,n,n-Fd.rank)]
          end
@@ -916,7 +921,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 """
-function tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    tsub = U.period/U.nperiod
    ns = length(U.values)
@@ -941,7 +946,7 @@ function tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj =
    # use fallback method
    Q = adj ? C'*C : C*C'
    X0 = adj ? U.values[ind]'*U.values[ind] : U.values[ind]*U.values[ind]' 
-   Xd = tvclyap(A, Q, tf, t0, X0; adj, solver, reltol, abstol, dt) 
+   Xd = PeriodicMatrixEquations.tvclyap(A, Q, tf, t0, X0; adj, solver, reltol, abstol, dt) 
    if adj
       Fd = cholesky(Xd, RowMaximum(), check = false)
       return makesp!([qr(Fd.U[1:Fd.rank, invperm(Fd.p)]).R; zeros(T,n-Fd.rank,n)];adj)

@@ -6,6 +6,7 @@ using LinearAlgebra
 using Symbolics
 using OrdinaryDiffEq
 using IRKGaussLegendre
+using MatrixEquations
 
 
 include("psclyap_Fourier.jl")

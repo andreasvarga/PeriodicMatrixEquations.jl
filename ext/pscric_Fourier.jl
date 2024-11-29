@@ -69,7 +69,7 @@ _References_
 [2] A. Varga. On solving periodic Riccati equations.  
     Numerical Linear Algebra with Applications, 15:809-835, 2008.    
 """
-      function pcric(A::PM, R::PM, Q::PM; K::Int = 10, adj = false, PSD_SLICOT::Bool = true, solver = "symplectic", reltol = 1.e-4, abstol = 1.e-7, dt = 0.0, 
+      function PeriodicMatrixEquations.pcric(A::PM, R::PM, Q::PM; K::Int = 10, adj = false, PSD_SLICOT::Bool = true, solver = "symplectic", reltol = 1.e-4, abstol = 1.e-7, dt = 0.0, 
          fast = true,  intpol = solver == "symplectic" ? true : false, intpolmeth = "cubic") where {PM <: FourierFunctionMatrix}
          At = convert(PeriodicFunctionMatrix,A)
          Rt = convert(PeriodicFunctionMatrix,R)
