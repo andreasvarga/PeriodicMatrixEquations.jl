@@ -821,46 +821,49 @@ function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = f
    T = eltype(ts)
    # using OrdinaryDiffEq
    u0 = MatrixEquations.triu2vec(W0)
-   tspan = adj ? (ts[end], ts[1]) : (ts[1], ts[end]) 
+   tspan = adj ? (ts[end], 0) : (0, ts[end]) 
    fclyap!(du,u,p,t) = adj ? muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
    prob = ODEProblem(fclyap!, u0, tspan)
    if solver == "stiff" 
       if reltol > 1.e-4  
          # standard stiff
-         sol = solve(prob, Rodas4(); reltol, abstol, save_everystep = true)
+         sol = solve(prob, Rodas4(); reltol, abstol, saveat = ts)
       else
          # high accuracy stiff
-         sol = solve(prob, KenCarp58(); reltol, abstol, save_everystep = true)
+         sol = solve(prob, KenCarp58(); reltol, abstol, saveat = ts)
       end
    elseif solver == "non-stiff" 
       if reltol > 1.e-4  
          # standard non-stiff
-         sol = solve(prob, Tsit5(); reltol, abstol, save_everystep = true)
+         sol = solve(prob, Tsit5(); reltol, abstol, saveat = ts)
       else
          # high accuracy non-stiff
-         sol = solve(prob, Vern9(); reltol, abstol, save_everystep = true)
+         sol = solve(prob, Vern9(); reltol, abstol, saveat = ts)
       end
    elseif solver == "symplectic" 
       # high accuracy symplectic
       if dt == 0 
-         sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, save_everystep = true)
-         #@show sol.retcode
+         #sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, saveat = ts)
+         sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, dense = true)
          if sol.retcode == :Failure
-            sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = true, dt = abs(tf-t0)/100)
+            #sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, saveat = ts, dt = abs(tf-t0)/100)
+            sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt = abs(tf-t0)/100)
          end
       else
-           sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = true, dt)
+         #sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, saveat = ts, dt)
+         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt)
       end
- else 
+      return MatrixEquations.vec2triu.(sol(ts).u, her=true)     
+   else 
       if reltol > 1.e-4  
          # low accuracy automatic selection
-         sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, save_everystep = true)
+         sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, saveat = ts)
       else
          # high accuracy automatic selection
-         sol = solve(prob, AutoVern9(Rodas5(),nonstifftol = 11/10); reltol, abstol, save_everystep = true)
+         sol = solve(prob, AutoVern9(Rodas5(),nonstifftol = 11/10); reltol, abstol, saveat = ts)
       end
    end
-   return MatrixEquations.vec2triu.(sol(ts).u, her=true)     
+   return MatrixEquations.vec2triu.(sol.u, her=true)     
 end
 function tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {T1, T2, PM1 <: AbstractPeriodicArray{:c,T1}, PM2 <: AbstractPeriodicArray{:c,T2}} 
