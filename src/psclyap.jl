@@ -818,27 +818,36 @@ function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = f
    n = size(A,1)
    n == size(A,2) || error("the periodic matrix A must be square")
    (n,n) == size(C) || error("the periodic matrix C must have same dimensions as A")
+   all(diff(ts) .>= 0) || throw(ArgumentError("the elements of ts must be non-decreasing"))
    T = eltype(ts)
    # using OrdinaryDiffEq
    u0 = MatrixEquations.triu2vec(W0)
-   tspan = adj ? (ts[end], 0) : (0, ts[end]) 
+   if adj
+      period = promote_period(A,C)
+      n = round(ts[end]/period)+1
+      tspan = (n*period, ts[1]) 
+      tval = reverse(ts)
+   else
+      tspan = (0, ts[end]) 
+      tval = ts
+   end
    fclyap!(du,u,p,t) = adj ? muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
    prob = ODEProblem(fclyap!, u0, tspan)
    if solver == "stiff" 
       if reltol > 1.e-4  
          # standard stiff
-         sol = solve(prob, Rodas4(); reltol, abstol, saveat = ts)
+         sol = solve(prob, Rodas4(); reltol, abstol, saveat = tval)
       else
          # high accuracy stiff
-         sol = solve(prob, KenCarp58(); reltol, abstol, saveat = ts)
+         sol = solve(prob, KenCarp58(); reltol, abstol, saveat = tval)
       end
    elseif solver == "non-stiff" 
       if reltol > 1.e-4  
          # standard non-stiff
-         sol = solve(prob, Tsit5(); reltol, abstol, saveat = ts)
+         sol = solve(prob, Tsit5(); reltol, abstol, saveat = tval)
       else
          # high accuracy non-stiff
-         sol = solve(prob, Vern9(); reltol, abstol, saveat = ts)
+         sol = solve(prob, Vern9(); reltol, abstol, saveat = tval)
       end
    elseif solver == "symplectic" 
       # high accuracy symplectic
@@ -857,13 +866,14 @@ function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = f
    else 
       if reltol > 1.e-4  
          # low accuracy automatic selection
-         sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, saveat = ts)
+         sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, saveat = tval)
       else
          # high accuracy automatic selection
-         sol = solve(prob, AutoVern9(Rodas5(),nonstifftol = 11/10); reltol, abstol, saveat = ts)
+         sol = solve(prob, AutoVern9(Rodas5(),nonstifftol = 11/10); reltol, abstol, saveat = tval)
       end
    end
-   return MatrixEquations.vec2triu.(sol.u, her=true)     
+   W = MatrixEquations.vec2triu.(sol.u, her=true)
+   return adj ? reverse(W) : W    
 end
 function tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {T1, T2, PM1 <: AbstractPeriodicArray{:c,T1}, PM2 <: AbstractPeriodicArray{:c,T2}} 
