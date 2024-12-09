@@ -66,54 +66,42 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function pclyap(A::PeriodicFunctionMatrix, C::PeriodicFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
+function pclyap(A::PeriodicFunctionMatrix, C::PeriodicFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, stability_check = false)
+   W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
    if intpol
-      W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       return PeriodicMatrixEquations.tvclyap(A, C, W0; adj, solver, reltol, abstol)
-      #return convert(PeriodicFunctionMatrix,PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
-      #return convert(PeriodicFunctionMatrix,pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
    else
-      W0 = pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol),A.period)
    end
 end
 pclyap(A::PeriodicFunctionMatrix, C::AbstractMatrix; kwargs...) = pclyap(A, PeriodicFunctionMatrix(C, A.period; nperiod = A.nperiod); kwargs...)
-function pclyap(A::PeriodicSymbolicMatrix, C::PeriodicSymbolicMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
+function pclyap(A::PeriodicSymbolicMatrix, C::PeriodicSymbolicMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, stability_check = false)
    At = convert(PeriodicFunctionMatrix,A)
    Ct = convert(PeriodicFunctionMatrix,C)
+   W0 = PeriodicMatrixEquations.pgclyap(At, Ct, K;  adj, solver, reltol, abstol, stability_check)
    if intpol
-      W0 = PeriodicMatrixEquations.pgclyap(At, Ct, K;  adj, solver, reltol, abstol, stability_check)
       return PeriodicMatrixEquations.tvclyap(At, Ct, W0; adj, solver, reltol, abstol)
-      #return convert(PeriodicFunctionMatrix,pgclyap(At, Ct, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
    else
-      W0 = pgclyap(At, Ct, K;  adj, solver, reltol, abstol, stability_check)
-      PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
+     PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
    end
    #convert(PeriodicSymbolicMatrix, pgclyap(convert(PeriodicFunctionMatrix,A), convert(PeriodicFunctionMatrix,C), K;  adj, solver, reltol, abstol))
 end
-function pclyap(A::HarmonicArray, C::HarmonicArray; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
+function pclyap(A::HarmonicArray, C::HarmonicArray; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, stability_check = false)
+   W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
    if intpol
-      W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       return PeriodicMatrixEquations.tvclyap(A, C, W0; adj, solver, reltol, abstol)
-      #return convert(PeriodicFunctionMatrix,pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
    else
-      W0 = pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
    end
-   #convert(HarmonicArray, pgclyap(A,  C, K;  adj, solver, reltol, abstol))
 end
-function pclyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
+function pclyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, stability_check = false)
    if intpol
       W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       return PeriodicMatrixEquations.tvclyap(A, C, W0; adj, solver, reltol, abstol)
-      #return convert(PeriodicFunctionMatrix,pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
-      #return convert(PeriodicFunctionMatrix,pgclyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
    else
-      #W0 = pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       W0 = pgclyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol, stability_check)
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
    end
-   # pgclyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol)
 end
 function pclyap(A::PeriodicSwitchingMatrix, C::PeriodicSwitchingMatrix; K::Int = 1, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, stability_check = false)
    At = convert(PeriodicFunctionMatrix,A)
@@ -1113,8 +1101,6 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 To speedup function evaluations, interpolation based function evaluations can be used 
 by setting the keyword argument `intpol = true` (default: `intpol = false`). 
-In this case the interpolation method to be used can be specified via the keyword argument
-`intpolmeth = meth`. The allowable values for `meth` are: `"constant"`, `"linear"`, `"quadratic"` and `"cubic"` (default).
 Interpolation is not possible if `A` and `C` are of type `PeriodicSwitchingMatrix`. 
 
 Parallel computation of the matrices of the discrete-time problem can be alternatively performed 
@@ -1131,21 +1117,24 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function pcplyap(A::PeriodicFunctionMatrix, C::PeriodicFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7, intpol = false, intpolmeth = "cubic")
+function pcplyap(A::PM1, C::PM2; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7, intpol = false) where
+   {PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray}} 
    if intpol
-      return convert(PeriodicFunctionMatrix,pgcplyap(A, C, K;  adj, solver, reltol, abstol), method = intpolmeth)
+      W0 = PeriodicMatrixEquations.pgclyap(A, adj ? C'*C : C*C', K;  adj, solver, reltol, abstol, stability_check = true)
+      return PeriodicMatrixEquations.tvcplyap(A, C, W0; adj, solver, reltol, abstol)
+      #return convert(PeriodicFunctionMatrix,pgcplyap(A, C, K;  adj, solver, reltol, abstol), method = intpolmeth)
    else
-      U0 = pgcplyap(A, C, K;  adj, solver, reltol, abstol)
-      return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcplyap_eval(t, U0, A, C; adj, solver, reltol, abstol),A.period)
+      U = PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol)
+      PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcplyap_eval(t, U, A, C; solver, adj, reltol, abstol), U.period; nperiod = U.nperiod)
    end
 end
 pcplyap(A::PeriodicFunctionMatrix, C::AbstractMatrix; kwargs...) = pcplyap(A, PeriodicFunctionMatrix(C, A.period; nperiod = A.nperiod); kwargs...)
-function pcplyap(A::PeriodicSymbolicMatrix, C::PeriodicSymbolicMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
-   convert(PeriodicSymbolicMatrix, pgcplyap(convert(PeriodicFunctionMatrix,A), convert(PeriodicFunctionMatrix,C), K;  adj, solver, reltol, abstol))
-end
-function pcplyap(A::HarmonicArray, C::HarmonicArray; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
-   convert(HarmonicArray, pgcplyap(A,  C, K;  adj, solver, reltol, abstol))
-end
+# function pcplyap(A::PeriodicSymbolicMatrix, C::PeriodicSymbolicMatrix; kwargs...)
+#    pcplyap(convert(PeriodicFunctionMatrix,A), convert(PeriodicFunctionMatrix,C);  kwargs...)
+# end
+# function pcplyap(A::HarmonicArray, C::HarmonicArray; kwargs...)
+#    convert(HarmonicArray, pgcplyap(A,  C;  kwargs...)
+# end
 # function pcplyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
 #    println("This function is not available for PeriodicTimeSeriesMatrix type")
 #    return nothing
@@ -1410,31 +1399,11 @@ function pseig3(A::Array{T,3}; rev::Bool = true, fast::Bool = false) where T
       return ev
    end
 end
-function tvcplyap(U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function tvcplyap(A::PM1, C::PM2, U::PeriodicTimeSeriesMatrix; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
    {PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray}} 
-   # tsub = U.period/U.nperiod
-   # ns = length(U.values)
-   # Δ = tsub/ns
-   # tf = mod(t,tsub)
-   # tf == 0 && (return U.values[1])
-   # if adj 
-   #    ind = round(Int,tf/Δ)
-   #    if ind == ns
-   #       t0 = ind*Δ; ind = 1
-   #    else
-   #       t0 = (ind+1)*Δ; ind = ind+2; 
-   #       ind > ns && (ind = 1) 
-   #   end 
-   # else
-   #    ind = round(Int,tf/Δ)
-   #    ind == 0 && (ind = 1) 
-   #    t0 = (ind-1)*Δ
-   # end
    n = size(A,1)
    T = eltype(U)
-   # use fallback method
    Q = adj ? C'*C : C*C'
-   #X0 = adj ? U.values[ind]'*U.values[ind] : U.values[ind]*U.values[ind]' 
    Xd = PeriodicMatrixEquations.tvclyap(A, Q, U; adj, solver, reltol, abstol, dt) 
    return PeriodicFunctionMatrix(t-> 
    begin
@@ -1443,9 +1412,9 @@ function tvcplyap(U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solve
          makesp!([qr(Fd.U[1:Fd.rank, invperm(Fd.p)]).R; zeros(T,n-Fd.rank,n)];adj)
       else
          Fd = cholesky(Xd(t), RowMaximum(), check = false)
-         makesp!(triu(LAPACK.gerqf!([Fd.L[invperm(Fd.p), 1:Fd.rank] zeros(T,n,n-Fd.rank)], similar(Xd,n))[1]);adj)
+         makesp!(triu(LAPACK.gerqf!([Fd.L[invperm(Fd.p), 1:Fd.rank] zeros(T,n,n-Fd.rank)], similar(Vector{T},n))[1]);adj)
       end
-   end, period; nperiod)  
+   end, Xd.period; Xd.nperiod)  
 end
 
     

@@ -53,14 +53,14 @@ Ys = convert(PeriodicSymbolicMatrix,Yt)
 Ys = convert(PeriodicSymbolicMatrix,Yt) 
 @test Ys ≈ Xs 
 
-@time Ys = prclyap(As,Cds; K = 512, reltol = 1.e-10, abstol = 1.e-10,intpol=false); 
+@time Yt = prclyap(As,Cds; K = 512, reltol = 1.e-10, abstol = 1.e-10,intpol=false); 
 Ys = convert(PeriodicSymbolicMatrix,Yt) 
 @test Xs ≈ Ys 
 
 
-@time Ys = pclyap(As,Cs'*Cs; adj = true, K = 1000, reltol = 1.e-10, abstol = 1.e-10);
-@time Us = pcplyap(As,Cs; adj = true, K = 1000, reltol = 1.e-10, abstol = 1.e-10);
-@test norm(Us'.(ts).*Us.(ts).-Ys.(ts),Inf) < 1.e-7 
+@time Yt = pclyap(As,Cs'*Cs; adj = true, K = 100, reltol = 1.e-10, abstol = 1.e-10,intpol=true);
+@time Ut = pcplyap(As,Cs; adj = true, K = 100, reltol = 1.e-10, abstol = 1.e-10,intpol=true);
+@test norm(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) < 1.e-7 
 
 # generate periodic function matrices
 A(t) = [0  1; -10*cos(t)-1 -24-19*sin(t)]
