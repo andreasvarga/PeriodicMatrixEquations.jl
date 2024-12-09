@@ -409,6 +409,16 @@ Yf = convert(FourierFunctionMatrix,Yt);
 @time Ut = pcplyap(Af,Cf; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10);
 @test norm(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) < 1.e-5
 
+@time Yt = pclyap(Af,Cf'*Cf; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10, intpol=true);
+@time Ut = pcplyap(Af,Cf; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10, intpol=true);
+@test norm(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) < 1.e-5
+
+
+@time Yt = pclyap(Afc,Cfc'*Cfc; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10, intpol=true);
+@time Ut = pcplyap(Afc,Cfc; adj = true, K = 500, reltol = 1.e-10, abstol = 1.e-10);
+@test norm(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) < 1.e-5
+
+
 @time Yt = prclyap(Af,Cf(0)'*Cf(0); K = 500, reltol = 1.e-10, abstol = 1.e-10);
 @time Ut = prcplyap(Af,Cf(0); K = 500, reltol = 1.e-10, abstol = 1.e-10);
 @test all(norm.(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) .< 1.e-5) 
@@ -423,10 +433,14 @@ Yf = convert(FourierFunctionMatrix,Yt);
 @show norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf)
 @test norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) < 1.e-7
 
+@time Yt = pfclyap(Af,Cdf*Cdf'; K = 500, reltol = 1.e-14, abstol = 1.e-14);
+@time Ut = pfcplyap(Af,Cdf; K = 500, reltol = 1.e-14, abstol = 1.e-14);
+#@show norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf)
+@test norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) < 1.e-7
 
 @time Yt = pfclyap(Af,(Cdf*Cdf')(0); K = 500, reltol = 1.e-14, abstol = 1.e-14);
 @time Ut = pfcplyap(Af,Cdf(0); K = 500, reltol = 1.e-14, abstol = 1.e-14);
-@show norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf)
+#@show norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf)
 @test norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) < 1.e-7
 
 K = 500
