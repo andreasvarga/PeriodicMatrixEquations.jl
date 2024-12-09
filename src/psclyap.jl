@@ -1,5 +1,5 @@
 """
-    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol, intpol, intpolmeth) -> X
+    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol, intpol) -> X
     pclyap(A, C; K = 10, adj = false, solver, reltol, abstol) -> X
 
 Solve the periodic Lyapunov differential equation
@@ -31,8 +31,6 @@ the function value `X(t)` by integrating the appropriate ODE from the nearest gr
 
 To speedup function evaluations, interpolation based function evaluations can be used 
 by setting the keyword argument `intpol = true` (default: `intpol = false`). 
-In this case the interpolation method to be used can be specified via the keyword argument
-`intpolmeth = meth`. The allowable values for `meth` are: `"constant"`, `"linear"`, `"quadratic"` and `"cubic"` (default).
 Interpolation is not possible if `A` and `C` are of type `PeriodicSwitchingMatrix`. 
 
 The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, together with
@@ -113,14 +111,14 @@ end
 
 for PM in (:PeriodicFunctionMatrix, :PeriodicSymbolicMatrix, :HarmonicArray, :PeriodicTimeSeriesMatrix)
    @eval begin
-      function prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
-         pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol, intpolmeth)
+      function prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false) 
+         pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol)
       end
       function prclyap(A::$PM, C::AbstractMatrix; kwargs...)
          prclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
       end
-      function pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
-         pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol, intpolmeth)
+      function pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false) 
+         pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol)
       end
       function pfclyap(A::$PM, C::AbstractMatrix; kwargs...)
          pfclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
@@ -141,7 +139,7 @@ function pfclyap(A::PM, C::AbstractMatrix; kwargs...) where {PM <: PeriodicSwitc
 end
 
 """
-    pfclyap(A, C; K = 10, solver, reltol, abstol, intpol, intpolmeth) -> X
+    pfclyap(A, C; K = 10, solver, reltol, abstol, intpol) -> X
     pfclyap(A, C; K = 10, solver, reltol, abstol) -> X
 
 Solve the periodic forward-time Lyapunov differential equation
@@ -158,7 +156,7 @@ This function is merely an interface to [`pclyap`](@ref) (see this function for 
 """
 pfclyap(A::PeriodicFunctionMatrix, C::PeriodicFunctionMatrix; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7)
 """
-    prclyap(A, C; K = 10, solver, reltol, abstol, intpol, intpolmeth) -> X
+    prclyap(A, C; K = 10, solver, reltol, abstol, intpol) -> X
     prclyap(A, C; K = 10, solver, reltol, abstol) -> X
 
 Solve the periodic reverse-time Lyapunov differential equation
@@ -1122,7 +1120,6 @@ function pcplyap(A::PM1, C::PM2; K::Int = 10, adj = false, solver = "non-stiff",
    if intpol
       W0 = PeriodicMatrixEquations.pgclyap(A, adj ? C'*C : C*C', K;  adj, solver, reltol, abstol, stability_check = true)
       return PeriodicMatrixEquations.tvcplyap(A, C, W0; adj, solver, reltol, abstol)
-      #return convert(PeriodicFunctionMatrix,pgcplyap(A, C, K;  adj, solver, reltol, abstol), method = intpolmeth)
    else
       U = PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol)
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcplyap_eval(t, U, A, C; solver, adj, reltol, abstol), U.period; nperiod = U.nperiod)

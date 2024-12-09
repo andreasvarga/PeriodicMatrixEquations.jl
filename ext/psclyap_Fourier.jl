@@ -1,5 +1,5 @@
 """
-    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol, intpol, intpolmeth) -> X
+    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol, intpol -> X
     pclyap(A, C; K = 10, adj = false, solver, reltol, abstol) -> X
 
 Solve the periodic Lyapunov differential equation
@@ -31,8 +31,6 @@ the function value `X(t)` by integrating the appropriate ODE from the nearest gr
 
 To speedup function evaluations, interpolation based function evaluations can be used 
 by setting the keyword argument `intpol = true` (default: `intpol = false`). 
-In this case the interpolation method to be used can be specified via the keyword argument
-`intpolmeth = meth`. The allowable values for `meth` are: `"constant"`, `"linear"`, `"quadratic"` and `"cubic"` (default).
 Interpolation is not possible if `A` and `C` are of type `PeriodicSwitchingMatrix`. 
 
 The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, together with
@@ -66,31 +64,28 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-#function pclyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false)
-function PeriodicMatrixEquations.pclyap(A::PM, C::PM; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic", stability_check = false) where {PM <: FourierFunctionMatrix}
+function PeriodicMatrixEquations.pclyap(A::PM, C::PM; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, stability_check = false) where {PM <: FourierFunctionMatrix}
    if intpol
       W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       return PeriodicMatrixEquations.tvclyap(A, C, W0; adj, solver, reltol, abstol)
-      #return convert(PeriodicFunctionMatrix,PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check), method = intpolmeth)
    else
       W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
    end
-   #convert(FourierFunctionMatrix, pgclyap(A,  C, K;  adj, solver, reltol, abstol))
 end
 
 
 for PM in (FourierFunctionMatrix, )
    @eval begin
-      function PeriodicMatrixEquations.prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
-         PeriodicMatrixEquations.pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol, intpolmeth)
+      function PeriodicMatrixEquations.prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false) 
+         PeriodicMatrixEquations.pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol)
       end
       function PeriodicMatrixEquations.prclyap(A::$PM, C::AbstractMatrix; kwargs...)
          #prclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
          PeriodicMatrixEquations.prclyap(A, $PM(C, A.period); kwargs...)
       end
-      function PeriodicMatrixEquations.pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, intpolmeth = "cubic") 
-         PeriodicMatrixEquations.pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol, intpolmeth)
+      function PeriodicMatrixEquations.pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false) 
+         PeriodicMatrixEquations.pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol)
       end
       function PeriodicMatrixEquations.pfclyap(A::$PM, C::AbstractMatrix; kwargs...)
          #PeriodicMatrixEquations.pfclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
