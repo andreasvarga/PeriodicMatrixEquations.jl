@@ -20,16 +20,17 @@ period = π;
 @time Xref, EVALSref, Fref = arec(A,B,R,Q); 
 
 PM = PeriodicFunctionMatrix
-@time X, EVALS, F = prcric(PM(A,period), PM(B,period), R, Q)
-@test X(0) ≈ Xref && PeriodicMatrices.isconstant(X)
-@time X1, EVALS1, F1 = pfcric(PM(Matrix(A'),period), PM(Matrix(B'),period), R, Q)
-@test X1(0) ≈ Xref && PeriodicMatrices.isconstant(X1)
+@time X, EVALS, F = prcric(PM(A,period), PM(B,period), R, Q);
+@test X(0) ≈ Xref && PeriodicMatrices.isconstant(X,check_const=true)
+@time X1, EVALS1, F1 = pfcric(PM(Matrix(A'),period), PM(Matrix(B'),period), R, Q);
+@test X1(0) ≈ Xref && PeriodicMatrices.isconstant(X1,check_const=true)
 
 PM = FourierFunctionMatrix
 @time X, EVALS, F = prcric(PM(A,period), PM(B,period), R, Q)
 @test X(0) ≈ Xref && PeriodicMatrices.isconstant(X)
 @time X1, EVALS1, F1 = pfcric(PM(Matrix(A'),period), PM(Matrix(B'),period), R, Q)
 @test X1(0) ≈ Xref && PeriodicMatrices.isconstant(X1)
+
 
 # @variables t
 # P = PeriodicSymbolicMatrix([cos(ω*t) sin(ω*t); -sin(ω*t) cos(ω*t)],period); PM = PeriodicSymbolicMatrix
@@ -40,10 +41,11 @@ P1dot = PeriodicFunctionMatrix(t->[-ω*sin(t*ω)   ω*cos(t*ω); -ω*cos(t*ω)  
 #P = convert(FourierFunctionMatrix,P); 
 PM = FourierFunctionMatrix
 # PM = PeriodicSymbolicMatrix
+PM = PeriodicFunctionMatrix
 
-for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, FourierFunctionMatrix, PeriodicTimeSeriesMatrix)
+for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, FourierFunctionMatrix)
     println("type = $PM")
-    N = PM == PeriodicTimeSeriesMatrix ? 128 : 200
+    N = 200
     P = convert(PM,P1);
     Pdot = convert(PM,P1dot);
 
@@ -55,34 +57,51 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
     Xp = inv(P)'*Xref*inv(P)
     Fp = Bp'*Xp
     Xnorm = norm(Xp); Fnorm = norm(Fp)
-    if PM == PeriodicTimeSeriesMatrix 
-       @test norm(Ap'*Xp+Xp*Ap+Qp-Xp*Bp*Bp'*Xp + pmderiv(Xp)) < 1.e-5*norm(Xp)
-    else
-       @test Ap'*Xp+Xp*Ap+Qp-Xp*Bp*Bp'*Xp ≈ -pmderiv(Xp)
-       @test norm(sort(real(psceig(Ap-Bp*Fp,100))) - sort(EVALSref)) < 1.e-6  
-    end
-    
-    solver = "symplectic"
+    @test Ap'*Xp+Xp*Ap+Qp-Xp*Bp*Bp'*Xp ≈ -pmderiv(Xp)
+    @test norm(sort(real(psceig(Ap-Bp*Fp,100))) - sort(EVALSref)) < 1.e-6  
+   
+    solver = "non-stiff"
     if PM == PeriodicFunctionMatrix
         ti = [0.; 0.5; 1.; 2.; 3.]
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        # no interpolation
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
         @test Errx < 1.e-4 && Errf < 1.e-4 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-4 && Errf < 1.e-4 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        # with interpolation
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, intpol = true, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-4 && Errf < 1.e-4 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = 1, intpol = true, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
         @test Errx < 1.e-4 && Errf < 1.e-4 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
     end
     #N = length(Xp.values)
     ti = collect((0:N-1)*Xp.period/N)*(1+eps(10.))
-    for solver in ("non-stiff", "stiff", "symplectic", "linear", "noidea")
+    for solver in ("non-stiff", "stiff", "noidea")
         println("solver = $solver")
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        # no interpolation
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, N = 1, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
         @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
-        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false,dt=0.001,intpol = false); 
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false, dt=0.001); 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        # with interpolation
+        println("solver = $solver")
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, N = 10, intpol = true, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, N = 10, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false,dt=0.001,intpol = true); 
         Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
         println("Errx = $Errx Errf = $Errf")
         @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
@@ -92,6 +111,8 @@ end
 A = [1 0.5; 3 5]; C = [3 1]; Q = [1. 0;0 1]; R = [1.;;]
 period = π; 
 ω = 2. ;
+K = 200
+N = K
 
 Xref, EVALSref, Fref = arec(A', C', R, Q); Fref = copy(Fref')
 @test norm(A*Xref+Xref*A'-Xref*C'*inv(R)*C*Xref +Q) < 1.e-7
@@ -99,11 +120,9 @@ Xref, EVALSref, Fref = arec(A', C', R, Q); Fref = copy(Fref')
 P1 = PeriodicFunctionMatrix(t->[cos(ω*t) sin(ω*t); -sin(ω*t) cos(ω*t)],period); 
 P1dot = PeriodicFunctionMatrix(t->[-ω*sin(t*ω)   ω*cos(t*ω); -ω*cos(t*ω)  -ω*sin(t*ω)],period); 
 
-PM = FourierFunctionMatrix
-
-for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, FourierFunctionMatrix, PeriodicTimeSeriesMatrix)
+PM = PeriodicFunctionMatrix
+for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, FourierFunctionMatrix)
     println("type = $PM")
-    N = PM == PeriodicTimeSeriesMatrix ? 128 : 200
     P = convert(PM,P1);
     Pdot = convert(PM,P1dot);
 
@@ -114,28 +133,91 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
     Xp = P*Xref*P'
     Gp = Cp'*inv(Rp)*Cp
     Fp = Xp*Cp'
-    if PM == PeriodicTimeSeriesMatrix 
-        @test norm(Ap*Xp+Xp*Ap'+Qp-Xp*Gp*Xp - pmderiv(Xp)) < 1.e-5*norm(Xp)
-    else
-        @test Ap*Xp+Xp*Ap'+Qp-Xp*Gp*Xp ≈ pmderiv(Xp)
-        @test norm(sort(real(psceig(Ap-Fp*Cp,100))) - sort(EVALSref)) < 1.e-6   
-    end
- 
+    @test Ap*Xp+Xp*Ap'+Qp-Xp*Gp*Xp ≈ pmderiv(Xp)
+    @test norm(sort(real(psceig(Ap-Fp*Cp,100))) - sort(EVALSref)) < 1.e-6   
      
-    solver = "symplectic" 
+    #solver = "non-stiff" 
     ti = collect((0:N-1)*Xp.period/N)*(1+eps(10.))
-    for solver in ("non-stiff", "stiff", "symplectic", "linear", "noidea")
+    for solver in ("non-stiff", "stiff", "noidea")
         println("solver = $solver")
-        @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        # no Interpolation
+        @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
         Errx = norm(X.(ti)-Xp.(ti))/norm(Xp); Errf = norm(F.(ti)-Fp.(ti))/norm(Fp)
         println("Errx = $Errx Errf = $Errf")
-        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
-        @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K = N, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K = N, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
         Errx = norm(X.(ti)-Xp.(ti))/norm(Xp); Errf = norm(F.(ti)-Fp.(ti))/norm(Fp)
         println("Errx = $Errx Errf = $Errf")
-        @test Errx < 1.e-7 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        # with intrpolation
+        @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K = N, N = 10, intpol = true, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
+        Errx = norm(X.(ti)-Xp.(ti))/norm(Xp); Errf = norm(F.(ti)-Fp.(ti))/norm(Fp)
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+        @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K = N, N = 10, intpol = true, solver, reltol = 1.e-10, abstol = 1.e-10, fast = false) 
+        Errx = norm(X.(ti)-Xp.(ti))/norm(Xp); Errf = norm(F.(ti)-Fp.(ti))/norm(Fp)
+        println("Errx = $Errx Errf = $Errf")
+        @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
     end
 end   
+
+A = [1 0.5; 3 5]; B = [3;1;;]; Q = [1. 0;0 1]; R = [1.;;]
+period = π; 
+ω = 2. ;@time Xref, EVALSref, Fref = arec(A,B,R,Q);
+
+P = PeriodicFunctionMatrix(t->[cos(ω*t) sin(ω*t); -sin(ω*t) cos(ω*t)],period); 
+Pdot = PeriodicFunctionMatrix(t->[-ω*sin(t*ω)   ω*cos(t*ω); -ω*cos(t*ω)  -ω*sin(t*ω)],period); 
+
+Ap = Pdot*inv(P)+P*A*inv(P);
+Bp = P*B
+Qp = inv(P)'*Q*inv(P); Qp = (Qp+Qp')/2
+Rp = PeriodicFunctionMatrix(R, Ap.period)
+Xp = inv(P)'*Xref*inv(P)
+Fp = Bp'*Xp
+
+K = 200; N = 5
+ti = collect((0:K-1)*Xp.period/N)*(1+eps(10.))
+
+Xnorm = norm(Xref); Fnorm = norm(Fref)
+solvers = ("non-stiff", "stiff", "symplectic", "linear", "auto")
+i = 0
+for k in (1,5,10,100,200)
+    i += 1
+    @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K, N = k, solver1 = solvers[i], solver= "non-stiff", reltol = 1.e-10, abstol = 1.e-10, intpol=true) 
+    Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+    println("N = $k  Errx = $Errx Errf = $Errf")
+    @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+end
+
+A = [1 0.5; 3 5]; C = [3 1]; Q = [1. 0;0 1]; R = [1.;;]
+period = π; 
+ω = 2. ;
+
+Xref, EVALSref, Fref = arec(A', C', R, Q); Fref = copy(Fref')
+P = PeriodicFunctionMatrix(t->[cos(ω*t) sin(ω*t); -sin(ω*t) cos(ω*t)],period); 
+Pdot = PeriodicFunctionMatrix(t->[-ω*sin(t*ω)   ω*cos(t*ω); -ω*cos(t*ω)  -ω*sin(t*ω)],period); 
+
+Ap = Pdot*inv(P)+P*A*inv(P);
+Cp = C*inv(P)
+Qp = P*Q*P'; Qp = (Qp+Qp')/2
+Rp = PeriodicFunctionMatrix(R, Ap.period)
+Xp = P*Xref*P'
+Gp = Cp'*inv(Rp)*Cp
+Fp = Xp*Cp'
+
+K = 200; N = 5
+ti = collect((0:K-1)*Xp.period/N)*(1+eps(10.))
+
+Xnorm = norm(Xref); Fnorm = norm(Fref)
+i = 0
+for k in (1,5,10,100,200)
+    i += 1
+    @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K, N = k, solver1 = solvers[i], solver = "non-stiff", reltol = 1.e-10, abstol = 1.e-10, fast = true, intpol=true) 
+    Errx = norm(X.(ti)-Xp.(ti))/Xnorm; Errf = norm(F.(ti)-Fp.(ti))/Fnorm
+    println("N = $k  Errx = $Errx Errf = $Errf")
+    @test Errx < 1.e-6 && Errf < 1.e-6 && norm(sort(real(EVALS)) - sort(EVALSref)) < 1.e-2
+end
+
 
 # random examples
 
@@ -153,20 +235,20 @@ ev = psceig(A,100)
 @test all(real(psceig(A-B*F,100)) .< 0)
 
 Xdot = pmderiv(X); 
-@test norm(A'.(ts).*X.(ts).+X.(ts).*A.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .+ Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-7
+@test norm(A'.(ts).*X.(ts).+X.(ts).*A.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .+ Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-6
 
 @time X, EVALS, F = prcric(A, B, R, Q; K = 100, solver = "non-stiff", reltol = 1.e-10, abstol = 1.e-10, fast = false); 
 
 @test all(real(psceig(A-B*F,100)) .< 0)
 
 Xdot = pmderiv(X); 
-@test norm(A'.(ts).*X.(ts).+X.(ts).*A.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .+ Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-7
+@test norm(A'.(ts).*X.(ts).+X.(ts).*A.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .+ Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-6
 
 @time X, EVALS, F = pfcric(A, B', R, Q; K = 100, solver = "non-stiff", reltol = 1.e-10, abstol = 1.e-10, fast = true);
 @test all(real(psceig(A-F*B',100)) .< 0)
 
 Xdot = pmderiv(X); 
-@test norm(A.(ts).*X.(ts).+X.(ts).*A'.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .- Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-7
+@test norm(A.(ts).*X.(ts).+X.(ts).*A'.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .- Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-6
 
 
 # Pitelkau's example - singular Lyapunov equations

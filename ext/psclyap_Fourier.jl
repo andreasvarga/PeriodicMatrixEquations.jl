@@ -1,5 +1,5 @@
 """
-    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol, intpol -> X
+    pclyap(A, C; K = 10, N = 1, adj = false, solver, reltol, abstol, intpol -> X
     pclyap(A, C; K = 10, adj = false, solver, reltol, abstol) -> X
 
 Solve the periodic Lyapunov differential equation
@@ -30,8 +30,9 @@ The resulting periodic generator is finally converted into a periodic function m
 the function value `X(t)` by integrating the appropriate ODE from the nearest grid point value. 
 
 To speedup function evaluations, interpolation based function evaluations can be used 
-by setting the keyword argument `intpol = true` (default: `intpol = false`). 
-Interpolation is not possible if `A` and `C` are of type `PeriodicSwitchingMatrix`. 
+by setting the keyword argument `intpol = true` (default: `intpol = true`). 
+The integer keyword argument `N` can be used to split the integration domain (i.e., one period) into `N` subdomains to perform the interpolations separately in each domain.
+The default value of `N` is `N = 1`.  
 
 The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, together with
 the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and 
@@ -46,9 +47,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 Parallel computation of the matrices of the discrete-time problem can be alternatively performed 
 by starting Julia with several execution threads. 
@@ -64,28 +63,27 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function PeriodicMatrixEquations.pclyap(A::PM, C::PM; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false, stability_check = false) where {PM <: FourierFunctionMatrix}
+function PeriodicMatrixEquations.pclyap(A::PM, C::PM; K::Int = 10, N::Int = 1, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true, stability_check = false) where {PM <: FourierFunctionMatrix}
+   W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
    if intpol
-      W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
-      return PeriodicMatrixEquations.tvclyap(A, C, W0; adj, solver, reltol, abstol)
+      return PeriodicMatrixEquations.pclyap_intpol(A, C, W0; N, adj, solver, reltol, abstol)
    else
-      W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
-      PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
+      return PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol),A.period)
    end
 end
 
 
 for PM in (FourierFunctionMatrix, )
    @eval begin
-      function PeriodicMatrixEquations.prclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false) 
-         PeriodicMatrixEquations.pclyap(A, C; K, adj = true, solver, reltol, abstol, intpol)
+      function PeriodicMatrixEquations.prclyap(A::$PM, C::$PM; K::Int = 10, N::Int = 1, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true) 
+         PeriodicMatrixEquations.pclyap(A, C; K, N, adj = true, solver, reltol, abstol, intpol)
       end
       function PeriodicMatrixEquations.prclyap(A::$PM, C::AbstractMatrix; kwargs...)
          #prclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
          PeriodicMatrixEquations.prclyap(A, $PM(C, A.period); kwargs...)
       end
-      function PeriodicMatrixEquations.pfclyap(A::$PM, C::$PM; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = false) 
-         PeriodicMatrixEquations.pclyap(A, C; K, adj = false, solver, reltol, abstol, intpol)
+      function PeriodicMatrixEquations.pfclyap(A::$PM, C::$PM; K::Int = 10, N::Int = 1, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true) 
+         PeriodicMatrixEquations.pclyap(A, C; K, N, adj = false, solver, reltol, abstol, intpol)
       end
       function PeriodicMatrixEquations.pfclyap(A::$PM, C::AbstractMatrix; kwargs...)
          #PeriodicMatrixEquations.pfclyap(A, $PM(C, A.period; nperiod = A.nperiod); kwargs...)
@@ -95,7 +93,7 @@ for PM in (FourierFunctionMatrix, )
 end
 
 """
-    pgclyap(A, C[, K = 1]; adj = false, solver, reltol, abstol, dt) -> X
+    pgclyap(A, C[, K = 1]; adj = false, solver, reltol, abstol) -> X
 
 Compute periodic generators for the periodic Lyapunov differential equation
 
@@ -127,8 +125,8 @@ the generator solution in the grid points and then to compute the solution by so
 equation using the periodic Schur method of [2]. 
 
 The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, 
-together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = 0`, only used if `solver = "symplectic"`). 
+together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and 
+absolute accuracy `abstol` (default: `abstol = 1.e-7`).
 Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
 which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
 higher order solvers are employed able to cope with high accuracy demands. 
@@ -139,9 +137,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 
 Parallel computation of the matrices of the discrete-time problem can be alternatively performed 
@@ -158,7 +154,7 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function PeriodicMatrixEquations.pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
+function PeriodicMatrixEquations.pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, stability_check = false) where
       {PM1 <: FourierFunctionMatrix, PM2 <:FourierFunctionMatrix} 
    K > 0 || throw(ArgumentError("number of grid ponts K must be greater than 0, got K = $K"))    
    period = promote_period(A, C)
@@ -167,7 +163,6 @@ function PeriodicMatrixEquations.pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false
    nperiod = gcd(na*A.nperiod, nc*C.nperiod)
    n = size(A,1)
    Ts = period/K/nperiod
-   solver == "symplectic" && dt == 0 && (dt = K >= 100 ? Ts : Ts*K/100/nperiod)
    
    T = promote_type(eltype(A),eltype(C),Float64)
    T == Num && (T = Float64)
@@ -190,12 +185,12 @@ function PeriodicMatrixEquations.pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false
       end 
       if adj
          Threads.@threads for i = K:-1:1
-            @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol, dt) 
+            @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol) 
          end
          X = pslyapd(Ad, Cd; adj)
       else
          Threads.@threads for i = 1:K
-               @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, i*Ts, (i-1)*Ts; adj, solver, reltol, abstol, dt) 
+               @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, i*Ts, (i-1)*Ts; adj, solver, reltol, abstol) 
          end
          X = pslyapd(Ad, Cd; adj)
       end
@@ -203,7 +198,7 @@ function PeriodicMatrixEquations.pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false
    return PeriodicTimeSeriesMatrix([X[:,:,i] for i in 1:size(X,3)], period; nperiod)
 end
 """
-    pgclyap2(A, C, E, [, K = 1]; solver, reltol, abstol, dt) -> (X,Y)
+    pgclyap2(A, C, E, [, K = 1]; solver, reltol, abstol) -> (X,Y)
 
 Compute the solutions of the periodic differential Lyapunov equations
 
@@ -230,8 +225,8 @@ the generator solutions in the grid points and then to compute the solutions by 
 equations using the periodic Schur method of [2]. 
 
 The ODE solver to be employed to convert the continuous-time problems into discrete-time problems can be specified using the keyword argument `solver`, 
-together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = 0`, only used if `solver = "symplectic"`). 
+together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+absolute accuracy `abstol` (default: `abstol = 1.e-7`).
 Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
 which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
 higher order solvers are employed able to cope with high accuracy demands. 
@@ -244,7 +239,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
 
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 Parallel computation of the matrices of the discrete-time problem can be alternatively performed 
 by starting Julia with several execution threads. 
@@ -259,7 +254,7 @@ _References_
 [2] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
     Int. J. Control, vol, 67, pp, 69-87, 1997.  
 """
-function PeriodicMatrixEquations.pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
+function PeriodicMatrixEquations.pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, stability_check = false) where
       {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix, PM3 <: FourierFunctionMatrix}
    K > 0 || throw(ArgumentError("number of grid ponts K must be greater than 0, got K = $K"))    
    period = promote_period(A, C, E)
@@ -292,17 +287,17 @@ function PeriodicMatrixEquations.pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; so
          @inbounds Ad[:,:,i] = tvstm(A, i*Ts, (i-1)*Ts; solver, reltol, abstol) 
       end
       Threads.@threads for i = 1:K
-         @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, i*Ts, (i-1)*Ts; adj = false, solver, reltol, abstol, dt) 
+         @inbounds Cd[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, C, i*Ts, (i-1)*Ts; adj = false, solver, reltol, abstol) 
       end
       Threads.@threads for i = K:-1:1
-         @inbounds Ed[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol, dt) 
+         @inbounds Ed[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol) 
       end
       X, Y = pslyapd2(Ad, Cd, Ed)
    end
    return PeriodicTimeSeriesMatrix([X[:,:,i] for i in 1:size(X,3)], period; nperiod), PeriodicTimeSeriesMatrix([Y[:,:,i] for i in 1:size(Y,3)], period; nperiod)
 end
 """
-    pgclyap2(A, C, E, [, K = 1]; solver, reltol, abstol, dt) -> (X,Y)
+    pgclyap2(A, C, E, [, K = 1]; solver, reltol, abstol) -> (X,Y)
 
 Compute the solution of the discrete-time periodic Lyapunov equation
 
@@ -329,8 +324,8 @@ the generator solution in the grid points and then to compute the solution by so
 equation using the periodic Schur method of [2]. 
 
 The ODE solver to be employed to convert the continuous-time problems into discrete-time problems can be specified using the keyword argument `solver`, 
-together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = 0`, only used if `solver = "symplectic"`). 
+together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+absolute accuracy `abstol` (default: `abstol = 1.e-7`).
 Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
 which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
 higher order solvers are employed able to cope with high accuracy demands. 
@@ -343,7 +338,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
 
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 Parallel computation of the matrices of the discrete-time problem can be alternatively performed 
 by starting Julia with several execution threads. 
@@ -358,7 +353,7 @@ _References_
 [2] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
     Int. J. Control, vol, 67, pp, 69-87, 1997.  
 """
-function PeriodicMatrixEquations.pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0, stability_check = false) where
+function PeriodicMatrixEquations.pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::Int = 1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, stability_check = false) where
       {PM1 <: FourierFunctionMatrix, PM3 <: FourierFunctionMatrix}
    K > 0 || throw(ArgumentError("number of grid ponts K must be greater than 0, got K = $K"))    
    period = promote_period(A, E)
@@ -367,8 +362,6 @@ function PeriodicMatrixEquations.pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::
    nperiod = gcd(na*A.nperiod, ne*E.nperiod)
    n = size(A,1)
    Ts = period/K/nperiod
-   solver == "symplectic" && dt == 0 && (dt = K >= 100 ? Ts : Ts*K/100/nperiod)
-   
    T = promote_type(eltype(A),eltype(C),eltype(E),Float64)
    if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(E)
       A0 = tpmeval(A,0)
@@ -393,7 +386,7 @@ function PeriodicMatrixEquations.pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::
       end
       copyto!(view(Cd,:,:,K),C)
       Threads.@threads for i = K:-1:1
-         @inbounds Ed[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol, dt) 
+         @inbounds Ed[:,:,i]  = PeriodicMatrixEquations.tvclyap(A, E, (i-1)*Ts, i*Ts; adj = true, solver, reltol, abstol) 
       end
       X, Y = pslyapd2(Ad, Cd, Ed)
    end
@@ -401,7 +394,7 @@ function PeriodicMatrixEquations.pgclyap2(A::PM1, C::AbstractMatrix, E::PM3, K::
 end
 
 """
-      tvclyap_eval(t, W, A, C; adj = false, solver, reltol, abstol, dt) -> Xval
+      tvclyap_eval(t, W, A, C; adj = false, solver, reltol, abstol) -> Xval
 
 Compute the time value `Xval := X(t)` of the solution of the periodic Lyapunov differential equation
 
@@ -418,8 +411,8 @@ and the same value of the keyword argument `adj`.
 The initial time `t0` is the nearest time grid value to `t`, from below, if `adj = false`, or from above, if `adj = true`. 
 
 The above ODE is solved by employing the integration method specified via the keyword argument `solver`, 
-together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = 0`, only used if `solver = "symplectic"`). 
+together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+absolute accuracy `abstol` (default: `abstol = 1.e-7`).
 Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
 which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
 higher order solvers are employed able to cope with high accuracy demands. 
@@ -430,12 +423,9 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
-
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 """
-function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    tsub = X.period/X.nperiod
    ns = length(X.values)
@@ -455,9 +445,9 @@ function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatri
       ind == 0 && (ind = 1) 
       t0 = (ind-1)*Δ
    end
-   return PeriodicMatrixEquations.tvclyap(A, C, tf, t0, X.values[ind]; adj, solver, reltol, abstol, dt) 
+   return PeriodicMatrixEquations.tvclyap(A, C, tf, t0, X.values[ind]; adj, solver, reltol, abstol) 
 end
-function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatrix,A::PM1; solver = "non-stiff", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix} 
    tsub = X.period/X.nperiod
    ns = length(X.values)
@@ -468,10 +458,10 @@ function PeriodicMatrixEquations.tvclyap_eval(t::Real,X::PeriodicTimeSeriesMatri
       ind == 0 && (ind = 1) 
       t0 = (ind-1)*Δ
    #@show tf, t0
-   return PeriodicMatrixEquations.tvclyap(A, FourierFunctionMatrix(zeros(eltype(A),size(A)...),A.period), tf, t0, X.values[ind]; adj = false, solver, reltol, abstol, dt) 
+   return PeriodicMatrixEquations.tvclyap(A, FourierFunctionMatrix(zeros(eltype(A),size(A)...),A.period), tf, t0, X.values[ind]; adj = false, solver, reltol, abstol) 
 end
 
-function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = missing; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = missing; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
@@ -486,8 +476,8 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{Abstr
             W(t) = -A(t)'*W(t)-W(t)*A(t)-C(t), W(t0) = 0, tf < t0, if adj = true. 
 
    The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, 
-   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-   absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = abs(tf-t0)/100`, only used if `solver = "symplectic"`). 
+   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+   absolute accuracy `abstol` (default: `abstol = 1.e-7`). 
    """
    n = size(A,1)
    n == size(A,2) || error("the periodic matrix A must be square")
@@ -514,18 +504,18 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{Abstr
          # high accuracy non-stiff
          sol = solve(prob, Vern9(); reltol, abstol, save_everystep = false)
       end
-   elseif solver == "symplectic" 
-      # high accuracy symplectic
-      if dt == 0 
-         sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, save_everystep = false)
-         #@show sol.retcode
-         if sol.retcode == :Failure
-            sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt = abs(tf-t0)/100)
-         end
-      else
-           sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
-      end
- else 
+   # elseif solver == "symplectic" 
+   #    # high accuracy symplectic
+   #    if dt == 0 
+   #       sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, save_everystep = false)
+   #       #@show sol.retcode
+   #       if sol.retcode == :Failure
+   #          sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt = abs(tf-t0)/100)
+   #       end
+   #    else
+   #         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false)
+   #    end
+   else 
       if reltol > 1.e-4  
          # low accuracy automatic selection
          sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, save_everystep = false)
@@ -536,9 +526,107 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, tf, t0, W0::Union{Abstr
    end
    return MatrixEquations.vec2triu(sol.u[end], her=true)     
 end
-function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function tvclyap_sol(A::PM1, C::PM2, tf, t0, W0::Union{AbstractMatrix,Missing} = missing; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
+   {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
+   """
+      tvclyap_sol(A, C, tf, t0, W0; adj, solver, reltol, abstol) -> S(t)
+
+   Compute the solution on the interval `[t0,tf]` of the differential matrix Lyapunov equation 
+            .
+            W(t) = A(t)*W(t)+W(t)*A'(t)+C(t), W(t0) = W0, tf > t0, if adj = false
+
+   or on the interval `[tf,t0]` of
+            .
+            W(t) = -A(t)'*W(t)-W(t)*A(t)-C(t), W(t0) = W0, tf < t0, if adj = true. 
+
+   The computed solution `S(t)` is the upper triangular part of the symmetric solution `W(t)`, as results using the
+   solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package with the option
+   `dense = true`.         
+
+   The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, 
+   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+   absolute accuracy `abstol` (default: `abstol = 1.e-7`). 
+   """
+   n = size(A,1)
+   n == size(A,2) || error("the periodic matrix A must be square")
+   (n,n) == size(C) || error("the periodic matrix C must have same dimensions as A")
+   T = promote_type(typeof(t0), typeof(tf))
+   # using OrdinaryDiffEq
+   ismissing(W0) ? u0 = zeros(T,div(n*(n+1),2)) : u0 = MatrixEquations.triu2vec(W0)
+   tspan = (T(t0),T(tf))
+   fclyap!(du,u,p,t) = adj ? muladdcsym!(du, u, -1, tpmeval(A,t)', tpmeval(C,t)) : muladdcsym!(du, u, 1, tpmeval(A,t), tpmeval(C,t))
+   prob = ODEProblem(fclyap!, u0, tspan)
+   if solver == "stiff" 
+      if reltol > 1.e-4  
+         # standard stiff
+         sol = solve(prob, Rodas4(); reltol, abstol, dense = true)
+      else
+         # high accuracy stiff
+         sol = solve(prob, KenCarp58(); reltol, abstol, dense = true)
+      end
+   elseif solver == "non-stiff" 
+      if reltol > 1.e-4  
+         # standard non-stiff
+         sol = solve(prob, Tsit5(); reltol, abstol, dense = true)
+      else
+         # high accuracy non-stiff
+         sol = solve(prob, Vern9(); reltol, abstol, dense = true)
+      end
+   # elseif solver == "symplectic" 
+   #    # high accuracy symplectic
+   #    if dt == 0 
+   #       sol = solve(prob, IRKGaussLegendre.IRKGL16(maxtrials=4); adaptive = true, reltol, abstol, dense = true)
+   #       #@show sol.retcode
+   #       if sol.retcode == :Failure
+   #          sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt = abs(tf-t0)/100)
+   #       end
+   #    else
+   #         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true)
+   #    end
+   else 
+      if reltol > 1.e-4  
+         # low accuracy automatic selection
+         sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, dense = true)
+      else
+         # high accuracy automatic selection
+         sol = solve(prob, AutoVern9(Rodas5(),nonstifftol = 11/10); reltol, abstol, dense = true)
+      end
+   end
+   return sol
+end
+
+function pclyap_intpol(A::PM1, C::PM2, W0::PeriodicTimeSeriesMatrix; N::Int = length(W0), adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7) where
+   {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
+   K = length(W0)
+   N < K || (N = K)
+   while rem(K,N) !== 0
+      N += 1
+   end
+   tsub = W0.period/W0.nperiod
+   Ts = tsub/N
+   Y = similar(Vector{Any},N)
+   Ni = div(K,N)
+   if adj 
+      for k = N:-1:1   
+          iw = mod(k*Ni-1,K)+2; 
+          iw > K && (iw = 1)
+          Y[k]  = PeriodicMatrixEquations.tvclyap_sol(A, C, (k-1)*Ts, k*Ts, W0.values[iw]; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10) 
+      end
+   else
+      for k = 1:N
+          Y[k]  = PeriodicMatrixEquations.tvclyap_sol(A, C, k*Ts, (k-1)*Ts, W0.values[(k-1)*Ni+1]; adj, solver, reltol, abstol) 
+      end
+   end
+
+   return PeriodicFunctionMatrix(t-> 
+   begin
+      tf = mod(t,tsub)
+      ind = round(Int,tf/Ts-0.5)+1
+      MatrixEquations.vec2triu(Y[ind](tf), her=true)   
+   end, W0.period; W0.nperiod)  
+end
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <:FourierFunctionMatrix} 
-   #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
       tvclyap(A, C, ts, W0; adj, solver, reltol, abstol) -> W::Matrix
 
@@ -551,8 +639,8 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0:
             W(t) = -A(t)'*W(t)-W(t)*A(t)-C(t), W(ts[end]) = W0, tf < t0, if adj = true. 
 
    The ODE solver to be employed can be specified using the keyword argument `solver`, 
-   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-   absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = abs(tf-t0)/100`, only used if `solver = "symplectic"`). 
+   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+   absolute accuracy `abstol` (default: `abstol = 1.e-7`). 
    
    """
    n = size(A,1)
@@ -599,8 +687,8 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0:
    #          sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt = abs(tf-t0)/100)
    #       end
    #    else
-   #       #sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, saveat = ts, dt)
-   #       sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt)
+   #       #sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, saveat = ts)
+   #       sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true)
    #    end
    #    return MatrixEquations.vec2triu.(sol(ts).u, her=true)     
    else 
@@ -615,7 +703,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0:
    W = MatrixEquations.vec2triu.(sol.u, her=true)
    return adj ? reverse(W) : W    
 end
-function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
@@ -630,8 +718,8 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj
             W(t) = -A(t)'*W(t)-W(t)*A(t)-C(t), W(ts[end]) = W0, tf < t0, if adj = true. 
 
    The ODE solver to be employed can be specified using the keyword argument `solver`, 
-   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-   absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = abs(tf-t0)/100`, only used if `solver = "symplectic"`). 
+   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+   absolute accuracy `abstol` (default: `abstol = 1.e-7`). 
    Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
    which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
    higher order solvers are employed able to cope with high accuracy demands. 
@@ -642,9 +730,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj
 
    `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-   `solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-   `solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+   `solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
    """
    n = size(A,1)
    n == size(A,2) || error("the periodic matrix A must be square")
@@ -681,7 +767,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj
    #          sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = true, dt = abs(tf-t0)/100)
    #       end
    #    else
-   #         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = true, dt)
+   #         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = true)
    #    end
    else 
       if reltol > 1.e-4  
@@ -694,9 +780,8 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W0::AbstractMatrix; adj
    end
    return PeriodicFunctionMatrix(t-> MatrixEquations.vec2triu(sol(t), her=true),period)     
 end
-function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMatrix; adj = false, solver = "", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMatrix; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
-   #{PM1 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}, PM2 <: Union{PeriodicFunctionMatrix,PeriodicSymbolicMatrix,HarmonicArray,FourierFunctionMatrix,PeriodicSwitchingMatrix}} 
    """
       tvclyap(A, C, G; adj, solver, reltol, abstol) -> W::Matrix
 
@@ -714,8 +799,8 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMa
    withing the `OrdinaryDiffEq` package.       
 
    The ODE solver to be employed can be specified using the keyword argument `solver`, 
-   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-   absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = abs(tf-t0)/100`, only used if `solver = "symplectic"`). 
+   together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+   absolute accuracy `abstol` (default: `abstol = 1.e-7`). 
    Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
    which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
    higher order solvers are employed able to cope with high accuracy demands. 
@@ -726,9 +811,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMa
 
    `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-   `solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-   `solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+   `solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
    """
    n = size(A,1)
    n == size(A,2) || error("the periodic matrix A must be square")
@@ -769,7 +852,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMa
    #          sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt = abs(tf-t0)/100)
    #       end
    #    else
-   #         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true, dt)
+   #         sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, dense = true)
    #    end
    else 
       if reltol > 1.e-4  
@@ -782,7 +865,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMa
    end
    return PeriodicFunctionMatrix(t-> MatrixEquations.vec2triu(sol(mod(t,tsub)), her=true),period; nperiod)     
 end
-function PeriodicMatrixEquations.pcplyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, intpol = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
+function PeriodicMatrixEquations.pcplyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, intpol = true, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
    if intpol
       W0 = PeriodicMatrixEquations.pgclyap(A, adj ? C'*C : C*C', K;  adj, solver, reltol, abstol, stability_check = true)
       return PeriodicMatrixEquations.tvcplyap(A, C, W0; adj, solver, reltol, abstol)
@@ -813,7 +896,7 @@ for PM in (:FourierFunctionMatrix, )
    end
 end
 """
-    pgcplyap(A, C[, K = 1]; adj = false, solver, reltol, abstol, dt) -> U
+    pgcplyap(A, C[, K = 1]; adj = false, solver, reltol, abstol) -> U
 
 Compute upper triangular periodic generators `U(t)` of the solution `X(t) = U(t)U(t)'` of the 
 periodic Lyapunov differential equation
@@ -839,8 +922,8 @@ the generator solution in `K` time grid points and then to compute the solution 
 equation using the iterative method (Algorithm 5) of [2]. 
 
 The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, 
-together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = 0`, only used if `solver = "symplectic"`).
+together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+absolute accuracy `abstol` (default: `abstol = 1.e-7`).
 Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
 which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
 higher order solvers are employed able to cope with high accuracy demands. 
@@ -851,9 +934,7 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 For large values of `K`, parallel computation of the matrices of the discrete-time problem can be alternatively performed 
 by starting Julia with several execution threads. 
@@ -869,7 +950,7 @@ _References_
     Int. J. Control, vol, 67, pp, 69-87, 1997.
     
 """
-function PeriodicMatrixEquations.pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "", reltol = 1e-7, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "auto", reltol = 1e-7, abstol = 1e-7) where
       {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    period = promote_period(A, C)
    na = Int(round(period/A.period))
@@ -892,7 +973,7 @@ function PeriodicMatrixEquations.pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = fals
       if adj
          #Threads.@threads for i = K:-1:1
          for i = K:-1:1
-             Xd = PeriodicMatrixEquations.tvclyap(A, C'*C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol, dt) 
+             Xd = PeriodicMatrixEquations.tvclyap(A, C'*C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol) 
              Fd = cholesky(Xd, RowMaximum(), check = false)
              Cd[:,:,i] = [Fd.U[1:Fd.rank, invperm(Fd.p)]; zeros(T,n-Fd.rank,n)]
          end
@@ -900,7 +981,7 @@ function PeriodicMatrixEquations.pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = fals
       else
          #Threads.@threads for i = 1:K
          for i = 1:K
-             Xd = PeriodicMatrixEquations.tvclyap(A, C*C', i*Ts, (i-1)*Ts; adj, reltol, abstol, dt) 
+             Xd = PeriodicMatrixEquations.tvclyap(A, C*C', i*Ts, (i-1)*Ts; adj, reltol, abstol) 
              Fd = cholesky(Xd, RowMaximum(), check = false)
              Cd[:,:,i] = [Fd.L[invperm(Fd.p), 1:Fd.rank] zeros(T,n,n-Fd.rank)]
          end
@@ -910,7 +991,7 @@ function PeriodicMatrixEquations.pgcplyap(A::PM1, C::PM2, K::Int = 1; adj = fals
    return PeriodicTimeSeriesMatrix([U[:,:,i] for i in 1:size(U,3)], period; nperiod)
 end
 """
-     tvcplyap_eval(t, U, A, C; adj = false, solver, reltol, abstol, dt) -> Uval
+     tvcplyap_eval(t, U, A, C; adj = false, solver, reltol, abstol) -> Uval
 
 
 Compute the time value `Uval := U(t)` of the upper triangular periodic generators 
@@ -929,8 +1010,8 @@ and the same value of the keyword argument `adj`.
 The initial time `t0` is the nearest time grid value to `t`, from below, if `adj = false`, or from above, if `adj = true`. 
 
 The above ODE is solved by employing the integration method specified via the keyword argument `solver`, 
-together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`),  
-absolute accuracy `abstol` (default: `abstol = 1.e-7`) and stepsize `dt` (default: `dt = 0`, only used if `solver = "symplectic"`). 
+together with the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and  
+absolute accuracy `abstol` (default: `abstol = 1.e-7`).
 Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
 which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
 higher order solvers are employed able to cope with high accuracy demands. 
@@ -941,13 +1022,9 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = "linear"` - use a special solver for linear ODEs (`MagnusGL6()`) with fixed time step `dt`;
-
-`solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 """
-function PeriodicMatrixEquations.tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatrix,A::PM1, C::PM2; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    tsub = U.period/U.nperiod
    ns = length(U.values)
@@ -972,7 +1049,7 @@ function PeriodicMatrixEquations.tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatr
    # use fallback method
    Q = adj ? C'*C : C*C'
    X0 = adj ? U.values[ind]'*U.values[ind] : U.values[ind]*U.values[ind]' 
-   Xd = PeriodicMatrixEquations.tvclyap(A, Q, tf, t0, X0; adj, solver, reltol, abstol, dt) 
+   Xd = PeriodicMatrixEquations.tvclyap(A, Q, tf, t0, X0; adj, solver, reltol, abstol) 
    if adj
       Fd = cholesky(Xd, RowMaximum(), check = false)
       return PeriodicMatrixEquations.makesp!([qr(Fd.U[1:Fd.rank, invperm(Fd.p)]).R; zeros(T,n-Fd.rank,n)];adj)
@@ -981,7 +1058,7 @@ function PeriodicMatrixEquations.tvcplyap_eval(t::Real,U::PeriodicTimeSeriesMatr
       return PeriodicMatrixEquations.makesp!(triu(LAPACK.gerqf!([Fd.L[invperm(Fd.p), 1:Fd.rank] zeros(T,n,n-Fd.rank)], similar(Xd,n))[1]);adj)
    end
 end
-function PeriodicMatrixEquations.tvcplyap(A::PM1, C::PM2, U::PeriodicTimeSeriesMatrix; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7, dt = 0) where
+function PeriodicMatrixEquations.tvcplyap(A::PM1, C::PM2, U::PeriodicTimeSeriesMatrix; adj = false, solver = "non-stiff", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    # tsub = U.period/U.nperiod
    # ns = length(U.values)
@@ -1006,7 +1083,7 @@ function PeriodicMatrixEquations.tvcplyap(A::PM1, C::PM2, U::PeriodicTimeSeriesM
    # use fallback method
    Q = adj ? C'*C : C*C'
    #X0 = adj ? U.values[ind]'*U.values[ind] : U.values[ind]*U.values[ind]' 
-   Xd = PeriodicMatrixEquations.tvclyap(A, Q, U; adj, solver, reltol, abstol, dt) 
+   Xd = PeriodicMatrixEquations.tvclyap(A, Q, U; adj, solver, reltol, abstol) 
    return PeriodicFunctionMatrix(t-> 
    begin
       if adj

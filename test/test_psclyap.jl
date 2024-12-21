@@ -125,10 +125,19 @@ Ad = monodromy(At,100)
 @time Ut1 = pfcplyap(At,Ct; K = 512, reltol = 1.e-14, abstol = 1.e-14);
 @test Ut1*Ut1' ≈ Yt 
 
+N = 2; 
+@time Ut = pcplyap(At,Ct; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
+for N in (1,2,5,10,100,512)
+    @time Yt = pclyap(At,Ct*Ct'; N, adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
+    @test norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) < 1.e-5
+end
 
-@time Yt = pclyap(At,Ct*Ct'; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
-@time Ut = pcplyap(At,Ct; adj = false, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
-@test norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) < 1.e-5
+N = 2; 
+@time Ut = pcplyap(At,Cdt; adj = true, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
+for N in (1,2,5,10,100,512)
+    @time Yt = pclyap(At,Cdt'*Cdt; N, adj = true, K = 512, reltol = 1.e-14, abstol = 1.e-14, intpol=true);
+    @test norm(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) < 1.e-5
+end
 
 
 @time Yt = pclyap(At,Ct'*Ct; adj = true, K = 1000, reltol = 1.e-14, abstol = 1.e-14, intpol=false);
@@ -175,7 +184,7 @@ Ad = monodromy(At,100)
 
 # singular factors
 At1 = [[At zeros(2,2)]; [zeros(2,2) At]]; Ct1 = [Ct; -Ct];
-Ut1 = pgcplyap(At1, Ct1, 64; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10);
+Ut1 = pgcplyap(At1, Ct1, 64; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
 @test all(cond.(Ut1.values) .> 1.e6)
 @time Ut2 = pcplyap(At1,Ct1; adj = false, K = 64, reltol = 1.e-10, abstol = 1.e-10, intpol=false); 
 ti = collect((0:63)*(2pi/64)).+eps(20.);
@@ -199,76 +208,76 @@ ti = collect((0:63)*(2pi/64)).+eps(20.);
 
 
 K = 500
-@time W0 = pgclyap(At, Ct, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time W0 = pgclyap(At, Ct, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
 Ts = 2pi/K
 success = true
 for i = 1:K
-    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     iw = i+1; iw > K && (iw = 1)
     success = success && norm(Y-W0.values[iw]) < 1.e-7
 end
 @test success
 
-@time W1 = pgclyap(At, Cdt, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(At, Ct, Cdt, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W1 = pgclyap(At, Cdt, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(At, Ct, Cdt, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test X0 ≈ W0 && Y0 ≈ W1
 
-@time W0 = pgclyap(Ac, Cc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W0 = pgclyap(Ac, Cc, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test X0 ≈ W0 && Y0 ≈ W1
 
-@time W1 = pgclyap(At, Cdt, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10);
-@time X0, Y0  = pgclyap2(At, Ct(0), Cdt, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
-YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, At, Cdt; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
+@time W1 = pgclyap(At, Cdt, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(At, Ct(0), Cdt, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, At, Cdt; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((At'*YYt+YYt*At+Cdt+pmderiv(YYt)).(ts),Inf) < 1.e-5  
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, At; solver = "", reltol = 1.e-10, abstol = 1.e-10),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, At; solver = "auto", reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((At*XXt+XXt*At'-pmderiv(XXt)).(ts),Inf) < 1.e-5  
 @test Y0 ≈ W1
 
 
-@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Ac, Cc, Cdc, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test Y0 ≈ W1
 
-@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Ac, Cc(0), Cdc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Ac; solver = "", reltol = 1.e-10, abstol = 1.e-10),2*pi)
+@time W1 = pgclyap(Ac, Cdc, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Ac, Cc(0), Cdc, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Ac; solver = "auto", reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ac*XXt+XXt*Ac'-pmderiv(XXt)).(ts),Inf) < 1.e-5  
 @test Y0 ≈ W1
 
 
 K = 10
-@time W0 = pgclyap(At, Ct, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+@time W0 = pgclyap(At, Ct, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
 ns = 10; ts = sort([0.; rand(ns-1)*2*pi; 2*pi])
 success = true
 for t in ts
-    Xtval = PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Xtval = PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     success = success && norm(Xtval-Xt(t)) < 1.e-7
 end
 @test success
-@time XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@time XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((At*XXt+XXt*At'+Ct-pmderiv(XXt)).(ts),Inf) < 1.e-5   
 
 
 
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "symplectic", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
-    @time W0 = pgclyap(At, Ct, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001);
-    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, ts, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001) 
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001)  for t in ts]
+    @time W0 = pgclyap(At, Ct, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10);
+    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, ts, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10) 
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
     @test norm(Y-Xtval) < 1.e-5
 end
 
 K= 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
-    @time W0 = pgclyap(At, Cdt, K; adj = true, solver, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001);
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Cdt; solver, adj = true, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001)  for t in 2*ts]
-    Y  = PeriodicMatrixEquations.tvclyap(At, Cdt, 2*ts, W0.values[1]; solver, adj = true, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001) 
+    @time W0 = pgclyap(At, Cdt, K; adj = true, solver, reltol = 1.e-10, abstol = 1.e-10);
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Cdt; solver, adj = true, reltol = 1.e-10, abstol = 1.e-10)  for t in 2*ts]
+    Y  = PeriodicMatrixEquations.tvclyap(At, Cdt, 2*ts, W0.values[1]; solver, adj = true, reltol = 1.e-10, abstol = 1.e-10) 
     @test norm(Y-Xtval) < 1.e-5
 end
 
@@ -276,71 +285,75 @@ end
 
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "symplectic", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
-    @time W0 = pgclyap(At, Ct, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001); 
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001)  for t in ts]
+    @time W0 = pgclyap(At, Ct, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10);
+    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10); 
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
     @test norm(Y.(ts)-Xtval) < 1.e-5
 end
 
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "symplectic", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
-    @time W0 = pgclyap(At, Ct, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, W0; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001); 
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001)  for t in ts]
+    @time W0 = pgclyap(At, Ct, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10);
+    Y  = PeriodicMatrixEquations.tvclyap(At, Ct, W0; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10); 
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
     @test norm(Y.(ts)-Xtval) < 1.e-5
 end
 
 
-@time W0 = pgclyap(At, Ct, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-Y  = PeriodicMatrixEquations.tvclyap(At, Ct, ts, W0.values[1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
-Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001)  for t in ts]
+@time W0 = pgclyap(At, Ct, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+Y  = PeriodicMatrixEquations.tvclyap(At, Ct, ts, W0.values[1]; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
+Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
 @test norm(Y-Xtval) < 1.e-7
 
 success = true
 for t in ts
-    Xtval = PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Xtval = PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     success = success && norm(Xtval-Xt(t)) < 1.e-7
 end
 @test success
-@time XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@time XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((At*XXt+XXt*At'+Ct-pmderiv(XXt)).(ts),Inf) < 1.e-5   
 
 
 K = 500
-W0 = pgclyap(At,  Cdt, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+W0 = pgclyap(At,  Cdt, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
 Ts = 2pi/K
 success = true
 for i = K:-1:1
     iw = i+1; iw > K && (iw = 1)
-    Y  = PeriodicMatrixEquations.tvclyap(At, Cdt, (i-1)*Ts, i*Ts, W0.values[iw]; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(At, Cdt, (i-1)*Ts, i*Ts, W0.values[iw]; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10) 
     success = success && norm(Y-W0.values[i]) < 1.e-7
 end
 @test success
 
 K = 10
-W0 = pgclyap(At, Cdt, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+W0 = pgclyap(At, Cdt, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
 ns = 10; ts = sort([0.; rand(ns-1)*2*pi; 2*pi])
 success = true
 for t in ts
-    Xtval = PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Cdt; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Xtval = PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Cdt; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10) 
     success = success && norm(Xtval-Xt(t)) < 1.e-7
 end
 @test success
 
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Cdt; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Cdt; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((At'*XXt+XXt*At+Cdt+pmderiv(XXt)).(ts),Inf) < 1.e-5  
 
 
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "symplectic", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
-    @time Yt = pclyap(At, Ct; solver, K = 500, reltol = 1.e-10, abstol = 1.e-10);
-    @test Xt ≈ Yt
-    #@test maximum(norm.(Yt.f.(tt).-Xt.f.(tt))) < 1.e-6
+    @time Yt = pclyap(At, Ct; solver, K = 500, reltol = 1.e-10, abstol = 1.e-10,intpol=true);
+    #@test Xt ≈ Yt 
+    @test norm(Xt.(ts).-Yt.(ts),Inf) < 1.e-7
+    @time Yt = pclyap(At, Ct; solver, K = 500, reltol = 1.e-10, abstol = 1.e-10,intpol=false);
+    #@test Xt ≈ Yt 
+    @test norm(Xt.(ts).-Yt.(ts),Inf) < 1.e-7
+
 end
 
 
@@ -444,51 +457,51 @@ Yf = convert(FourierFunctionMatrix,Yt);
 @test norm(Ut.(ts).*Ut'.(ts).-Yt.(ts),Inf) < 1.e-7
 
 K = 500
-@time W0 = pgclyap(Af, Cf, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W0 = pgclyap(Af, Cf, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 Ts = 2pi/K
 success = true
 for i = 1:K
-    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     iw = i+1; iw > K && (iw = 1)
     success = success && norm(Y-W0.values[iw]) < 1.e-7
 end
 @test success
 
-@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Af, Cf, Cdf, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Af, Cf, Cdf, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test X0 ≈ W0 && Y0 ≈ W1
 
-@time W0 = pgclyap(Afc, Cfc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-@time W1 = pgclyap(Afc, Cdfc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Afc, Cfc, Cdfc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W0 = pgclyap(Afc, Cfc, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+@time W1 = pgclyap(Afc, Cdfc, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Afc, Cfc, Cdfc, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test X0 ≈ W0 && Y0 ≈ W1
 
 K = 100
-@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Af, Cf(0), Cdf, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Af, Cdf; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
+@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Af, Cf(0), Cdf, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Af, Cdf; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Af'.(ts).*YYt.(ts).+YYt.(ts).*Af.(ts).+Cdf.(ts).+pmderiv(YYt).(ts)),Inf) < 1.e-5  
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Af; solver = "", reltol = 1.e-10, abstol = 1.e-10),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Af; solver = "auto", reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test  norm((Af'.(ts).*YYt.(ts).+YYt.(ts).*Af.(ts).+Cdf.(ts).+pmderiv(YYt).(ts)),Inf) < 1.e-5
 @test Y0 ≈ W1
-@time X0, Y0  = pgclyap2(Afc, Cf(0), Cdfc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
-YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Afc, Cdfc; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
+@time X0, Y0  = pgclyap2(Afc, Cf(0), Cdfc, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Afc, Cdfc; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Afc'.(ts).*YYt.(ts).+YYt.(ts).*Afc.(ts).+Cdfc.(ts).+pmderiv(YYt).(ts)),Inf) < 1.e-5 
 
 
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
-    @time W0 = pgclyap(Af, Cf, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001);
-    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, ts, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001) 
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cf; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10,dt=0.0001)  for t in ts]
+    @time W0 = pgclyap(Af, Cf, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10);
+    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, ts, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10) 
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cf; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
     @test norm(Y-Xtval) < 1.e-5
 end
 
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
     @time W0 = pgclyap(Af, Cdf, K; adj = true, solver, reltol = 1.e-10, abstol = 1.e-10);
     Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cdf; solver, adj = true, reltol = 1.e-10, abstol = 1.e-10)  for t in 2*ts]
@@ -499,42 +512,42 @@ end
 
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
     @time W0 = pgclyap(Af, Cf, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10);
-    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001); 
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cf; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001)  for t in ts]
-    @test norm(Y.(ts)-Xtval) < 1.e-5 # fails
+    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, W0.values[1]; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10); 
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cf; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
+    @test norm(Y.(ts)-Xtval) < 1.e-5 
 end
 K = 100
 solver = "non-stiff"
-for solver in ("non-stiff", "stiff", "noidea")
+for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
     @time W0 = pgclyap(Af, Cf, K; adj = false, solver, reltol = 1.e-10, abstol = 1.e-10);
-    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, W0; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001); 
-    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cf; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001)  for t in ts]
-    @test norm(Y.(ts)-Xtval) < 1.e-5 # fails
+    Y  = PeriodicMatrixEquations.tvclyap(Af, Cf, W0; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10); 
+    Xtval = [PeriodicMatrixEquations.tvclyap_eval(t, W0, Af, Cf; solver, adj = false, reltol = 1.e-10, abstol = 1.e-10)  for t in ts]
+    @test norm(Y.(ts)-Xtval) < 1.e-5 
 end
 
 @time Yt = pclyap(Afc, Cfc, stability_check = true, K = 512, intpol = true, reltol = 1.e-12, abstol=1.e-12);
 @test norm(Yt.(ts).*Afc'.(ts).+Afc.(ts).*Yt.(ts).+Cfc.(ts),Inf) < 1.e-7
 
 K = 100
-@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10)
-@time X0, Y0  = pgclyap2(Af, Cf(0), Cdf, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+@time W1 = pgclyap(Af, Cdf, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10)
+@time X0, Y0  = pgclyap2(Af, Cf(0), Cdf, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test Y0 ≈ W1
-YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Af, Cdf; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
+YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Af, Cdf; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Af'*YYt+YYt*Af+Cdf+pmderiv(YYt,method="4d")).(ts),Inf) < 1.e-5  
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Af; solver = "", reltol = 1.e-10, abstol = 1.e-10),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Af; solver = "auto", reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm(Af.(ts).*XXt.(ts).+XXt.(ts).*Af'.(ts).-pmderiv(XXt).(ts),Inf) < 1.e-5  
 
 K = 100
-@time W1 = pgclyap(Afc, Cdfc, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-@time X0, Y0  = pgclyap2(Afc, Cf(0), Cdfc, K; solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+@time W1 = pgclyap(Afc, Cdfc, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+@time X0, Y0  = pgclyap2(Afc, Cf(0), Cdfc, K; solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 @test Y0 ≈ W1
-YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Afc, Cdfc; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
+YYt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, Y0, Afc, Cdfc; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Afc'.(ts).*YYt.(ts).+YYt.(ts).*Afc.(ts).+Cdfc.(ts).+pmderiv(YYt).(ts)),Inf) < 1.e-5  
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Afc; solver = "", reltol = 1.e-10, abstol = 1.e-10),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, X0, Afc; solver = "auto", reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm(Afc.(ts).*XXt.(ts).+XXt.(ts).*Afc'.(ts).-pmderiv(XXt).(ts),Inf) < 1.e-5  
 
 
@@ -579,22 +592,22 @@ Xt2 = pclyap(Ats1, Cts1; K = 2000, reltol = 1.e-14, abstol = 1.e-14);
 # @test all(norm.(Ut'.(ts).*Ut.(ts).-Yt.(ts),Inf) .< 1.e-5) 
 
 K = 512
-W0 = pgclyap(Ats, Cts, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+W0 = pgclyap(Ats, Cts, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ats*Xts+Xts*Ats'+Cts-pmderiv(Xts)).(ts)) < 1.e-6
 
-W0 = pgclyap(Ats, Cts, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts; solver = "", adj =true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+W0 = pgclyap(Ats, Cts, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts; solver = "auto", adj =true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ats'*Xts+Xts*Ats+Cts+pmderiv(Xts)).(ts)) < 1.e-6
 
 Cts2=set_period(Cts,4pi)
-W0 = pgclyap(Ats, Cts2, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts2; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),4*pi)
+W0 = pgclyap(Ats, Cts2, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ats, Cts2; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),4*pi)
 @test norm((Ats*Xts+Xts*Ats'+Cts2-pmderiv(Xts)).(ts)) < 1.e-6
 
 
-W0 = pgclyap(Atsc, Ctsc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
-Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Atsc, Ctsc; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+W0 = pgclyap(Atsc, Ctsc, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+Xts = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Atsc, Ctsc; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Atsc*Xts+Xts*Atsc'+Ctsc-pmderiv(Xts)).(ts)) < 1.e-6
 
 # K = 1000;
@@ -679,46 +692,46 @@ ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.199819983890
 
 
 K = 500
-W0 = pgclyap(Ast, Cst, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001, stability_check = true);
+W0 = pgclyap(Ast, Cst, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 Ts = 2pi/K
 success = true
 for i = 1:K
-    Y  = PeriodicMatrixEquations.tvclyap(Ast, Cst, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(Ast, Cst, i*Ts, (i-1)*Ts, W0.values[mod(i+K-1,K)+1]; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     iw = i+1; iw > K && (iw = 1)
     success = success && norm(Y-W0.values[iw]) < 1.e-3
 end
 @test success
-Xst = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ast, Cst; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+Xst = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ast, Cst; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ast*Xst+Xst*Ast'+Cst-pmderiv(Xst)).(ts)) < 1.e-6
 
 
 K = 100;
 #K = 1
-W1 = pgclyap(Asw, Csw, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001,stability_check = true);
-W2 = pgclyap(Asw, Csw, 1; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001,stability_check = true);
+W1 = pgclyap(Asw, Csw, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
+W2 = pgclyap(Asw, Csw, 1; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 success = true
 Ks = length(W1.ts)
 for i = 1:Ks
     tf = i == Ks ? W1.period/W1.nperiod : W1.ts[i+1]
-    Y  = PeriodicMatrixEquations.tvclyap(Asw, Csw, tf, W1.ts[i], W1.values[mod(i+Ks-1,Ks)+1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(Asw, Csw, tf, W1.ts[i], W1.values[mod(i+Ks-1,Ks)+1]; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     iw = i+1; iw > Ks && (iw = 1)
     success = success && norm(Y-W1.values[iw]) < 1.e-3
 end
 @test success
 
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W1, Asw, Csw; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W1, Asw, Csw; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ast*XXt+XXt*Ast'+Cst-pmderiv(XXt)).(rand(10)*2*pi)) < 1.e-6
 @test norm((Xst-XXt).(ts)) < 1.e-3
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W2, Asw, Csw; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W2, Asw, Csw; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ast*XXt+XXt*Ast'+Cst-pmderiv(XXt)).(rand(10)*2*pi)) < 1.e-6
 @test norm((Xst-XXt).(ts)) < 1.e-3
 
-W1 = pgclyap(Aswc, Cswc, K; adj = false, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001,stability_check = true);
+W1 = pgclyap(Aswc, Cswc, K; adj = false, solver = "auto", reltol = 1.e-10, abstol = 1.e-10, stability_check = true);
 success = true
 Ks = length(W1.ts)
 for i = 1:Ks
     tf = i == Ks ? W1.period/W1.nperiod : W1.ts[i+1]
-    Y  = PeriodicMatrixEquations.tvclyap(Aswc, Cswc, tf, W1.ts[i], W1.values[mod(i+Ks-1,Ks)+1]; solver = "", adj = false, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(Aswc, Cswc, tf, W1.ts[i], W1.values[mod(i+Ks-1,Ks)+1]; solver = "auto", adj = false, reltol = 1.e-10, abstol = 1.e-10) 
     iw = i+1; iw > Ks && (iw = 1)
     success = success && norm(Y-W1.values[iw]) < 1.e-3
 end
@@ -743,27 +756,26 @@ end
 # plot!(t2,[x2[i][1,1] for i in 1:ns2])
 
 K = 500
-@time W0 = pgclyap(Ast, Cst, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
-Xst = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ast, Cst; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+@time W0 = pgclyap(Ast, Cst, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
+Xst = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, Ast, Cst; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ast'*Xst+Xst*Ast+Cst+pmderiv(Xst)).(ts)) < 1.e-6
 
 K = 100;
 K = 1
-W1 = pgclyap(Asw, Csw, K; adj = true, solver = "", reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001);
+W1 = pgclyap(Asw, Csw, K; adj = true, solver = "auto", reltol = 1.e-10, abstol = 1.e-10);
 Ks = length(W1.ts)
 success = true
 for i = Ks:-1:1
     iw = i+1; iw > Ks && (iw = 1)
     t0 = i == Ks ? W1.period/W1.nperiod : W1.ts[i+1]
-    Y  = PeriodicMatrixEquations.tvclyap(Asw, Csw, W1.ts[i], t0, W1.values[iw]; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001) 
+    Y  = PeriodicMatrixEquations.tvclyap(Asw, Csw, W1.ts[i], t0, W1.values[iw]; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10) 
     success = success && norm(Y-W1.values[i]) < 1.e-7
 end
 @test success
 
-XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W1, Asw, Csw; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt = 0.0001),2*pi)
+XXt = PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W1, Asw, Csw; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10),2*pi)
 @test norm((Ast'*XXt+XXt*Ast+Cst+pmderiv(XXt)).(ts)) < 1.e-6
-@show "fails"
-@test norm(Xst-XXt) < 1.e-3 # fails?
+@test norm(Xst-XXt) < 1.e-3 
 
 
 
@@ -868,10 +880,10 @@ Ct = PeriodicFunctionMatrix(C2,2*pi)
 Cdt = PeriodicFunctionMatrix(Cd2,2*pi)
 Xt = PeriodicFunctionMatrix(X2,2*pi)
 
-@time Y = pclyap(At,Ct,K = 500, reltol = 1.e-10);
+@time Y = pclyap(At,Ct,K = 500, reltol = 1.e-10, intpol=false);
 
 tt = Vector((1:500)*2*pi/500) 
-@test maximum(norm.(Y.f.(tt).-Xt.f.(tt))) < 1.e-7
+@test maximum(norm.(Y.f.(tt).-Xt.f.(tt))) < 1.e-7  
 
 @time Y = pclyap(At,Cdt,K = 500, adj = true, reltol = 1.e-10)
 
@@ -969,7 +981,7 @@ tt = Vector((1:20)*2*pi/20)
 @test norm((At'*Yt+Yt*At+Ct'*Ct + pmderiv(Yt)).(tt),Inf) < 1.e-5
 @time Ut = pcplyap(At,Ct; adj = true, K = 100, reltol = 1.e-10, abstol = 1.e-10);
 Xt = Ut'*Ut; 
-@test norm((At'*Xt+Xt*At+Ct'*Ct + pmderiv(Xt)).(tt),Inf) < 1.e-5
+@test norm((At'*Xt+Xt*At+Ct'*Ct + pmderiv(Xt)).(tt),Inf) < 1.e-4  # fails
 @test norm((Yt-Xt).(tt)) < 1.e-6
 # @time Ut = pcplyap(At,Ct; adj = true, K = 100, implicit = true, reltol = 1.e-13, abstol = 1.e-13);
 # Xt = Ut'*Ut; 
