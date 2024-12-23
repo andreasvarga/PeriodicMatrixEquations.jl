@@ -27,15 +27,6 @@ If `fast = false`, the multiple-shooting method is used in
 conjunction with the periodic Schur decomposition to determine multiple point generators directly from the stable periodic invariant subspace of 
 an appropriate symplectic transition matrix (see also [2] for more details). 
 
-The keyword argument `K` specifies the number of grid points to be used
-for the resulting multiple point periodic generator (default: `K = 10`). 
-The obtained periodic generator is finally converted into a periodic function matrix which determines for a given `t` 
-the function value `X(t)` by interpolating the solution of the appropriate differential equations if `intpol = true` (default)  
-or by integrating the appropriate ODE from the nearest grid point value if `intpol = false`.
-For the interplation-based evaluation the integer keyword argument `N` can be used to split the integration domain (i.e., one period) 
-into `N` subdomains to perform the interpolations separately in each domain.
-The default value of `N` is `N = 1`.  
-
 For the determination of the multiple point periodic generators an implicit Runge-Kutta Gauss-Legendre 16th order method
 from the [IRKGaussLegendre.jl](https://github.com/SciML/IRKGaussLegendre.jl) package is employed to integrate the appropriate Hamiltonian system [2]. 
 
@@ -46,7 +37,7 @@ following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordinary
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 The accuracy of the computed solutions can be controlled via 
 the relative accuracy keyword `reltol` (default: `reltol = 1.e-4`) and 
@@ -221,7 +212,7 @@ following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordinary
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 The accuracy of the computed solutions can be controlled via 
 the relative accuracy keyword `reltol` (default: `reltol = 1.e-4`) and 
@@ -291,7 +282,7 @@ following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordinary
 
 `solver = "stiff"` - use a solver for stiff problems (`Rodas4()` or `KenCarp58()`);
 
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
 The accuracy of the computed solutions can be controlled via 
 the relative accuracy keyword `reltol` (default: `reltol = 1.e-4`) and 
@@ -347,14 +338,10 @@ If `fast = false`, the multiple-shooting method is used in
 conjunction with the periodic Schur decomposition to determine multiple point generators directly from the stable periodic invariant subspace of 
 an appropriate symplectic transition matrix (see also [2] for more details). 
 
-The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, together with
-the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and 
-absolute accuracy `abstol` (default: `abstol = 1.e-7`). 
-Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
-which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
-higher order solvers are employed able to cope with high accuracy demands. 
+The recommended solver to integrate the appropriate Hamiltonian system [2] is the implicit Runge-Kutta Gauss-Legendre 16th order method
+from the [IRKGaussLegendre.jl](https://github.com/SciML/IRKGaussLegendre.jl) package, which can be selected with `solver = "symplectic"` (default).
 
-The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package can be selected:
+Other ODE solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package can be also selected:
 
 `solver = "non-stiff"` - use a solver for non-stiff problems (`Tsit5()` or `Vern9()`);
 
@@ -362,9 +349,14 @@ The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/Ordi
 
 `solver = "linear"` - use a special solver for linear ODEs (`MagnusGL6()`) with fixed time step `dt`;
 
-`solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
+`solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
 
-`solver = ""` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+The accuracy of the computed solutions can be controlled via 
+the relative accuracy keyword `reltol` (default: `reltol = 1.e-4`) and 
+absolute accuracy keyword `abstol` (default: `abstol = 1.e-7`). 
+Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
+which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
+higher order solvers are employed able to cope with high accuracy demands. 
 
 For large values of `K`, parallel computation of the matrices of the discrete-time problem can be alternatively performed 
 by starting Julia with several execution threads. 
@@ -544,16 +536,11 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
          H(t) = [  A(t)  -R(t)  ],  if adj = true. 
                 [ -Q(t)  -A'(t) ]
 
-    The ODE solver to be employed can be specified using the keyword argument `solver`, 
-    (default: `solver = "symplectic"`) together with
-    the required relative accuracy `reltol` (default: `reltol = 1.e-4`), 
-    absolute accuracy `abstol` (default: `abstol = 1.e-7`) and/or 
-    the fixed step length `dt` (default: `dt =  min(A.period/A.nperiod/100,tf-t0)`). 
-    Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
-    which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
-    higher order solvers are employed able to cope with high accuracy demands. 
-
-    The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package can be selected:
+    The default ODE solver to be employed is the implicit Runge-Kutta Gauss-Legendre 16th order method
+    from the [IRKGaussLegendre.jl](https://github.com/SciML/IRKGaussLegendre.jl) package, 
+    which can be selected with `solver = "symplectic"`.
+    
+    The following solvers from the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package can be also selected:
 
     `solver = "non-stiff"` - use a solver for non-stiff problems (`Tsit5()` or `Vern9()`);
 
@@ -561,9 +548,14 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
 
     `solver = "linear"` - use a special solver for linear ODEs (`MagnusGL6()`) with fixed time step `dt`;
 
-    `solver = "symplectic"` - use a symplectic Hamiltonian structure preserving solver (`IRKGL16()`);
-
     `solver = "auto"` - use the default solver, which automatically detects stiff problems (`AutoTsit5(Rosenbrock23())` or `AutoVern9(Rodas5())`). 
+    
+    The accuracy of the computed solutions can be controlled via 
+    the relative accuracy keyword `reltol` (default: `reltol = 1.e-4`) and 
+    absolute accuracy keyword `abstol` (default: `abstol = 1.e-7`). 
+    Depending on the desired relative accuracy `reltol`, lower order solvers are employed for `reltol >= 1.e-4`, 
+    which are generally very efficient, but less accurate. If `reltol < 1.e-4`,
+    higher order solvers are employed able to cope with high accuracy demands. 
     """
     n = size(A,1)
     T = promote_type(typeof(t0), typeof(tf))
@@ -617,6 +609,7 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
          sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
        end
    else 
+       solver == "auto" || @warn "Unknown solver: the solver to be used is automatically selected"
        if reltol > 1.e-4  
           # low accuracy automatic selection
           sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, save_everystep = false)
@@ -758,6 +751,7 @@ function tvcric_sol(A::PM1, R::PM3, Q::PM4, tf, t0, X0::AbstractMatrix; adj = fa
    #       sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
    #    end
   else 
+      solver == "auto" || @warn "Unknown solver: the solver to be used is automatically selected"
       if reltol > 1.e-4  
          # low accuracy automatic selection
          sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, save_everystep = false)
@@ -849,6 +843,7 @@ function tvcric_ODEsol(A::PM1, R::PM3, Q::PM4, tf, t0, X0::AbstractMatrix; adj =
    #       sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
    #    end
   else 
+      solver == "auto" || @warn "Unknown solver: the solver to be used is automatically selected"
       if reltol > 1.e-4  
          # low accuracy automatic selection
          sol = solve(prob, AutoTsit5(Rosenbrock23()) ; reltol, abstol, dense = true)
@@ -877,7 +872,7 @@ function pcric_intpol(A::PM1, R::PM3, Q::PM4, W0::PeriodicTimeSeriesMatrix; N::I
       Threads.@threads for k = N:-1:1   
           iw = mod(k*Ni-1,K)+2; 
           iw > K && (iw = 1)
-          Y[k]  = PeriodicMatrixEquations.tvcric_ODEsol(A, R, Q, (k-1)*Ts, k*Ts, W0.values[iw]; solver = "", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt) 
+          Y[k]  = PeriodicMatrixEquations.tvcric_ODEsol(A, R, Q, (k-1)*Ts, k*Ts, W0.values[iw]; solver = "auto", adj = true, reltol = 1.e-10, abstol = 1.e-10, dt) 
       end
    else
       Threads.@threads for k = 1:N

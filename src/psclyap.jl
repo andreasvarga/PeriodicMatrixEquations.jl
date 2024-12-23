@@ -1,6 +1,5 @@
 """
     pclyap(A, C; K = 10, N = 1, adj = false, solver, reltol, abstol, intpol) -> X
-    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol) -> X
 
 Solve the periodic Lyapunov differential equation
 
@@ -20,20 +19,19 @@ The resulting symmetric periodic solution `X` has the type `PeriodicFunctionMatr
 is adjusted accordingly. 
 
 The multiple-shooting method of [1] is employed to convert the (continuous-time) periodic differential Lyapunov equation 
-into a discrete-time periodic Lyapunov equation satisfied by a multiple point generator of the solution. 
+into a discrete-time periodic Lyapunov equation satisfied by a multiple point periodic generator of the solution. 
 The keyword argument `K` specifies the number of grid points to be used
 for the discretization of the continuous-time problem (default: `K = 10`). 
-If  `A` and `C` are of types `PeriodicTimeSeriesMatrix` or `PeriodicSwitchingMatrix`, then `K` specifies the number of grid points used between two consecutive switching time values (default: `K = 1`).  
+If  `A` and `C` are of types `PeriodicTimeSeriesMatrix` or `PeriodicSwitchingMatrix`, then `K` specifies the number of grid points 
+used between two consecutive switching time values (default: `K = 1`).  
 The multiple point periodic generator is computed  by solving the appropriate discrete-time periodic Lyapunov 
 equation using the periodic Schur method of [2]. 
-The resulting periodic generator is finally converted into a periodic function matrix which determines for a given `t` 
-the function value `X(t)` by integrating the appropriate ODE from the nearest grid point value. 
-
-To speedup function evaluations, interpolation based function evaluations can be used 
-by setting the keyword argument `intpol = true` (default: `intpol = true`). 
-The integer keyword argument `N` can be used to split the integration domain (i.e., one period) into `N` subdomains to perform the interpolations separately in each domain.
+The obtained periodic generator is finally converted into a periodic function matrix which determines for a given `t` 
+the function value `X(t)` by interpolating the solution of the appropriate differential equations if `intpol = true` (default)  
+or by integrating the appropriate ODE from the nearest grid point value if `intpol = false`.
+For the interplation-based evaluation the integer keyword argument `N` can be used to split the integration domain (i.e., one period) 
+into `N` subdomains to perform the interpolations separately in each domain.
 The default value of `N` is `N = 1`.  
-Interpolation is not possible if `A` and `C` are of type `PeriodicSwitchingMatrix`. 
 
 The ODE solver to be employed to convert the continuous-time problem into a discrete-time problem can be specified using the keyword argument `solver`, together with
 the required relative accuracy `reltol` (default: `reltol = 1.e-4`) and 
@@ -139,7 +137,6 @@ end
 
 """
     pfclyap(A, C; K = 10, N = 1, solver, reltol, abstol, intpol) -> X
-    pfclyap(A, C; K = 10, solver, reltol, abstol) -> X
 
 Solve the periodic forward-time Lyapunov differential equation
 
@@ -156,7 +153,6 @@ This function is merely an interface to [`pclyap`](@ref) (see this function for 
 pfclyap(A::PeriodicFunctionMatrix, C::PeriodicFunctionMatrix; K::Int = 10, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7)
 """
     prclyap(A, C; K = 10, N = 1, solver, reltol, abstol, intpol) -> X
-    prclyap(A, C; K = 10, solver, reltol, abstol) -> X
 
 Solve the periodic reverse-time Lyapunov differential equation
 
@@ -187,15 +183,21 @@ or
     
 The periodic matrices `A` and `C` must have the same type, the same dimensions and commensurate periods, 
 and additionally `C` must be symmetric. 
+`K` specifies the number of grid points to be used
+for the discretization of the continuous-time problem (default: `K = 1`). 
+If  `A` and `C` are of types `PeriodicTimeSeriesMatrix` or `PeriodicSwitchingMatrix`, then `K` specifies the number of grid points 
+used between two consecutive switching time values (default: `K = 1`).  
+
 If `A` and `C` have the types `PeriodicFunctionMatrix`, `HarmonicArray`, `FourierFunctionMatrix` or `PeriodicTimeSeriesMatrix`, 
 then the resulting `X` is a collection of periodic generator matrices determined 
-as a periodic time-series matrix with `N` components, where `N = 1` if `A` and `C` are constant matrices
+as a _periodic time-series matrix_ with `N` components, where `N = 1` if `A` and `C` are constant matrices
 and `N = K` otherwise. 
 If `A` and `C` have the type `PeriodicSwitchingMatrix`, then `X` is a collection of periodic generator matrices 
-determined as a periodic switching matrix,
+determined as a _periodic switching matrix_,
 whose switching times are the unique switching times contained in the union of the switching times of `A` and `C`. 
 If `K > 1`, a refined grid of `K` equidistant values is used for each two consecutive 
 switching times in the union.      
+
 The period of `X` is set to the least common commensurate period of `A` and `C` and the number of subperiods
 is adjusted accordingly. Any component matrix of `X` is a valid initial value to be used to generate the  
 solution over a full period by integrating the appropriate differential equation. 
@@ -291,11 +293,15 @@ and
     
 The periodic matrices `A`, `C` and `E` must have the same dimensions, the same type and 
 commensurate periods. Additionally `C` and `E` must be symmetric.  
-If `A`, `C` and `E` have the types `PeriodicFunctionMatrix`, `HarmonicArray`, `FourierFunctionMatrix` or `PeriodicTimeSeriesMatrix`, 
+The allowed types are `PeriodicFunctionMatrix`, `PeriodicSymbolicMatrix` and `HarmonicArray`.
+
+`K` specifies the number of grid points to be used
+for the discretization of the continuous-time problem (default: `K = 1`). 
+If `A`, `C` and `E` have the types `PeriodicFunctionMatrix`, `HarmonicArray`, `FourierFunctionMatrix` or `PeriodicSymbolicMatrix`, 
 then the resulting `X` and `Y` are collections of periodic generator matrices determined 
 as periodic time-series matrices with `N` components, where `N = 1` if `A`, `C` and `E` are constant matrices
 and `N = K` otherwise.     
-The period `T` of `X` and `Y` is set to the least common commensurate period of `A`, `C` and `E` and the number of subperiods
+The period of `X` and `Y` is set to the least common commensurate period of `A`, `C` and `E` and the number of subperiods
 is adjusted accordingly. Any component matrix of `X` or `Y` is a valid initial value to be used to generate the  
 solution over a full period by integrating the appropriate differential equation. 
 The multiple-shooting method of [1] is employed, first, to convert the continuous-time periodic Lyapunov equations 
@@ -374,7 +380,7 @@ function pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; solver = "non-stiff", relt
    return PeriodicTimeSeriesMatrix([X[:,:,i] for i in 1:size(X,3)], period; nperiod), PeriodicTimeSeriesMatrix([Y[:,:,i] for i in 1:size(Y,3)], period; nperiod)
 end
 """
-    pgclyap2(A, C, E, [, K = 1]; solver, reltol, abstol) -> (X,Y)
+    pgclyap2(A, C::AbstractMatrix, E, [, K = 1]; solver, reltol, abstol) -> (X,Y)
 
 Compute the solution of the discrete-time periodic Lyapunov equation
 
@@ -389,7 +395,7 @@ The periodic matrices `A` and `E` and the constant matrix `C` must have the same
 must have the same type and commensurate periods. Additionally `C` and `E` must be symmetric.  
 `Φ(i)` denotes the transition matrix on the time interval `[Δ*(i-1), Δ*i]` corresponding to `A`, 
 where `Δ = T/K` with `T` the common period of `A` and `E`. `W(i) = 0` for `i = 1, ..., K-1` and `W(K) = C`.  
-If `A` and `E` have the types `PeriodicFunctionMatrix`, `HarmonicArray`, `FourierFunctionMatrix` or `PeriodicTimeSeriesMatrix`, 
+If `A` and `E` have the types `PeriodicFunctionMatrix`, `HarmonicArray`, `FourierFunctionMatrix` or `PeriodicSymbolicMatrix`, 
 then the resulting `Y` is a collection of periodic generator matrices determined 
 as a periodic time-series matrix with `N` components, where `N = 1` if `A` and `E` are constant matrices
 and `N = K` otherwise.     
@@ -863,9 +869,9 @@ end
 function tvclyap(A::PM1, C::PM2, ts::AbstractVector, W0::AbstractMatrix; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
    {T1, T2, PM1 <: AbstractPeriodicArray{:c,T1}, PM2 <: AbstractPeriodicArray{:c,T2}} 
    """
-      tvclyap(A, C, ts, W0; adj, solver, reltol, abstol) -> W::Matrix
+      tvclyap(A, C, ts, W0; adj, solver, reltol, abstol) -> W::Vector{Matrix}
 
-   Compute the solution at the time values ts of the differential matrix Lyapunov equation 
+   Compute the solution at the time values `ts` of the differential matrix Lyapunov equation 
             .
             W(t) = A(t)*W(t)+W(t)*A'(t)+C(t), W(ts[1]) = W0, if adj = false
 
@@ -1144,8 +1150,6 @@ An extension of the multiple-shooting method of [1] is employed to convert the (
 into a discrete-time periodic Lyapunov equation satisfied by a multiple point generator of the solution. 
 The keyword argument `K` specifies the number of grid points to be used
 for the discretization of the continuous-time problem (default: `K = 10`). 
-If  `A` and `C` are of types `PeriodicTimeSeriesMatrix` or `PeriodicSwitchingMatrix`, 
-then `K` specifies the number of grid points used between two consecutive switching time values (default: `K = 1`).  
 The upper triangular factor of the multiple point generator is computed  by solving the appropriate discrete-time periodic Lyapunov 
 equation using the iterative method (Algorithm 5) of [2]. 
 The resulting periodic generator is finally converted into 
