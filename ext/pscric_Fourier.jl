@@ -73,8 +73,8 @@ _References_
          Rt = convert(PeriodicFunctionMatrix,R)
          Qt = convert(PeriodicFunctionMatrix,Q)
          X, EVALS = PeriodicMatrixEquations.pgcric(At, Rt, Qt, K;  adj, solver = solver1, reltol, abstol, dt, fast, PSD_SLICOT)
-         if PeriodicMatrices.isconstant(X) && K > 1
-            return PeriodicFunctionMatrix(X(0),A.period), EVALS
+         if PeriodicMatrices.isconstant(X) 
+            (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(R) && PeriodicMatrices.isconstant(Q))) && (return PeriodicFunctionMatrix(X(0),X.period,nperiod = X.nperiod), EVALS)
          end
          if intpol 
             return PeriodicMatrixEquations.pcric_intpol(At, Rt, Qt, X; N, adj, solver, reltol, abstol), EVALS

@@ -63,8 +63,8 @@ _References_
 function pcric(A::PeriodicFunctionMatrix, R::PeriodicFunctionMatrix, Q::PeriodicFunctionMatrix; K::Int = 10, N::Int = 1, adj = false, PSD_SLICOT::Bool = true, solver1 = "symplectic", solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, dt = 0.0, 
    fast = true, intpol = true)
    X, EVALS = pgcric(A, R, Q, K;  adj, solver = solver1, reltol, abstol, dt, fast, PSD_SLICOT)
-   if PeriodicMatrices.isconstant(X) && K > 1
-      return PeriodicFunctionMatrix(X(0),A.period), EVALS
+   if PeriodicMatrices.isconstant(X) 
+      (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(R) && PeriodicMatrices.isconstant(Q))) && (return PeriodicFunctionMatrix(X(0),X.period,nperiod = X.nperiod), EVALS)
    end
    if intpol 
       return PeriodicMatrixEquations.pcric_intpol(A, R, Q, X; N, adj, solver, reltol, abstol), EVALS
@@ -80,6 +80,9 @@ for PM in (:PeriodicSymbolicMatrix, :HarmonicArray)
          Rt = convert(PeriodicFunctionMatrix,R)
          Qt = convert(PeriodicFunctionMatrix,Q)
          X, EVALS = pgcric(At, Rt, Qt, K;  adj, solver = solver1, reltol, abstol, dt, fast, PSD_SLICOT)
+         if PeriodicMatrices.isconstant(X) 
+            (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(R) && PeriodicMatrices.isconstant(Q))) && (return PeriodicFunctionMatrix(X(0),A.period), EVALS)
+         end
          if intpol
             return PeriodicMatrixEquations.pcric_intpol(At, Rt, Qt, X; N, adj, solver, reltol, abstol), EVALS
          else
@@ -842,7 +845,7 @@ function tvcric_ODEsol(A::PM1, R::PM3, Q::PM4, tf, t0, X0::AbstractMatrix; adj =
    #    else
    #       sol = solve(prob, IRKGaussLegendre.IRKGL16(); adaptive = false, reltol, abstol, save_everystep = false, dt)
    #    end
-  else 
+   else 
       solver == "auto" || @warn "Unknown solver: the solver to be used is automatically selected"
       if reltol > 1.e-4  
          # low accuracy automatic selection

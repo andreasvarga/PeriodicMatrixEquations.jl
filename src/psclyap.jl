@@ -64,6 +64,9 @@ _References_
 """
 function pclyap(A::PeriodicFunctionMatrix, C::PeriodicFunctionMatrix; K::Int = 10, N::Int = 1, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true, stability_check = false)
    W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
+   if PeriodicMatrices.isconstant(W0) 
+      (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+   end
    if intpol
       return PeriodicMatrixEquations.pclyap_intpol(A, C, W0; N, adj, solver, reltol, abstol)
    else
@@ -75,6 +78,9 @@ function pclyap(A::PeriodicSymbolicMatrix, C::PeriodicSymbolicMatrix; K::Int = 1
    At = convert(PeriodicFunctionMatrix,A)
    Ct = convert(PeriodicFunctionMatrix,C)
    W0 = PeriodicMatrixEquations.pgclyap(At, Ct, K;  adj, solver, reltol, abstol, stability_check)
+   if PeriodicMatrices.isconstant(W0) 
+      (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+   end
    if intpol
       return PeriodicMatrixEquations.pclyap_intpol(At, Ct, W0; N, adj, solver, reltol, abstol)
     else
@@ -83,6 +89,9 @@ function pclyap(A::PeriodicSymbolicMatrix, C::PeriodicSymbolicMatrix; K::Int = 1
 end
 function pclyap(A::HarmonicArray, C::HarmonicArray; K::Int = 10, N::Int = 1, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true, stability_check = false)
    W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
+   if PeriodicMatrices.isconstant(W0) 
+      (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+   end
    if intpol
       return PeriodicMatrixEquations.pclyap_intpol(A, C, W0; N, adj, solver, reltol, abstol)
    else
@@ -92,9 +101,15 @@ end
 function pclyap(A::PeriodicTimeSeriesMatrix, C::PeriodicTimeSeriesMatrix; K::Int = 10, N::Int = 1, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true, stability_check = false)
    if intpol
       W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
+      if PeriodicMatrices.isconstant(W0) 
+         (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+      end
       return PeriodicMatrixEquations.pclyap_intpol(A, C, W0; N, adj, solver, reltol, abstol)
    else
       W0 = pgclyap(convert(HarmonicArray,A), convert(HarmonicArray,C), K;  adj, solver, reltol, abstol, stability_check)
+      if PeriodicMatrices.isconstant(W0) 
+         (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+      end
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, A, C; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
    end
 end
@@ -102,6 +117,9 @@ function pclyap(A::PeriodicSwitchingMatrix, C::PeriodicSwitchingMatrix; K::Int =
    At = convert(PeriodicFunctionMatrix,A)
    Ct = convert(PeriodicFunctionMatrix,C)
    W0 = pgclyap(At, Ct, K;  adj, solver, reltol, abstol, stability_check)
+   if PeriodicMatrices.isconstant(W0) 
+      (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+   end
    PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvclyap_eval(t, W0, At, Ct; solver, adj, reltol, abstol), W0.period; nperiod = W0.nperiod)
 end
 
@@ -1192,10 +1210,17 @@ _References_
 function pcplyap(A::PM1, C::PM2; K::Int = 10, adj = false, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7, intpol = true) where
    {PM1 <: Union{PeriodicFunctionMatrix,HarmonicArray}, PM2 <: Union{PeriodicFunctionMatrix,HarmonicArray}} 
    if intpol
+      if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) 
+         U = PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol)
+         return PeriodicFunctionMatrix(U(0),U.period,nperiod=U.nperiod)
+      end
       W0 = PeriodicMatrixEquations.pgclyap(A, adj ? C'*C : C*C', K;  adj, solver, reltol, abstol, stability_check = true)
       return PeriodicMatrixEquations.tvcplyap(A, C, W0; adj, solver, reltol, abstol)
    else
       U = PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol)
+      if PeriodicMatrices.isconstant(U) 
+         (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(U(0),U.period,nperiod=U.nperiod))
+      end
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcplyap_eval(t, U, A, C; solver, adj, reltol, abstol), U.period; nperiod = U.nperiod)
    end
 end

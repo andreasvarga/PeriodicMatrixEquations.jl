@@ -84,7 +84,7 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
     end
     #N = length(Xp.values)
     ti = collect((0:N-1)*Xp.period/N)*(1+eps(10.))
-    for solver in ("non-stiff", "stiff", "noidea")
+    for solver in ("non-stiff", "stiff", "auto")
         println("solver = $solver")
         # no interpolation
         @time X, EVALS, F = prcric(Ap, Bp, Rp, Qp; K = N, N = 1, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 
@@ -138,7 +138,7 @@ for PM in (PeriodicFunctionMatrix, HarmonicArray, PeriodicSymbolicMatrix, Fourie
      
     #solver = "non-stiff" 
     ti = collect((0:N-1)*Xp.period/N)*(1+eps(10.))
-    for solver in ("non-stiff", "stiff", "noidea")
+    for solver in ("non-stiff", "stiff", "auto")
         println("solver = $solver")
         # no Interpolation
         @time X, EVALS, F = pfcric(Ap, Cp, Rp, Qp; K, intpol = false, solver, reltol = 1.e-10, abstol = 1.e-10, fast = true) 

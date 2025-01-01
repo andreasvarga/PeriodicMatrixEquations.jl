@@ -1,7 +1,7 @@
 name = "PeriodicMatrixEquations"
 uuid = "52570b1b-55d0-4b45-8be2-52db9c79d90e"
 authors = ["Andreas Varga <varga.andreas@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 FastLapackInterface = "29a986be-02c6-4525-aec4-84b980013641" 

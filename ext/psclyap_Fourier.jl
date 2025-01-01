@@ -1,6 +1,5 @@
 """
     pclyap(A, C; K = 10, N = 1, adj = false, solver, reltol, abstol, intpol -> X
-    pclyap(A, C; K = 10, adj = false, solver, reltol, abstol) -> X
 
 Solve the periodic Lyapunov differential equation
 
@@ -65,6 +64,9 @@ _References_
 """
 function PeriodicMatrixEquations.pclyap(A::PM, C::PM; K::Int = 10, N::Int = 1, adj = false, solver = "non-stiff", reltol = 1.e-4, abstol = 1.e-7, intpol = true, stability_check = false) where {PM <: FourierFunctionMatrix}
    W0 = PeriodicMatrixEquations.pgclyap(A, C, K;  adj, solver, reltol, abstol, stability_check)
+   if PeriodicMatrices.isconstant(W0) 
+      (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(W0(0),W0.period,nperiod=W0.nperiod))
+   end
    if intpol
       return PeriodicMatrixEquations.pclyap_intpol(A, C, W0; N, adj, solver, reltol, abstol)
    else
@@ -297,7 +299,7 @@ function PeriodicMatrixEquations.pgclyap2(A::PM1, C::PM2, E::PM3, K::Int = 1; so
    return PeriodicTimeSeriesMatrix([X[:,:,i] for i in 1:size(X,3)], period; nperiod), PeriodicTimeSeriesMatrix([Y[:,:,i] for i in 1:size(Y,3)], period; nperiod)
 end
 """
-    pgclyap2(A, C, E, [, K = 1]; solver, reltol, abstol) -> (X,Y)
+    pgclyap2(A, C::AbstractMatrix, E, [, K = 1]; solver, reltol, abstol) -> (X,Y)
 
 Compute the solution of the discrete-time periodic Lyapunov equation
 
@@ -783,7 +785,7 @@ end
 function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMatrix; adj = false, solver = "auto", reltol = 1e-4, abstol = 1e-7) where
    {PM1 <: FourierFunctionMatrix, PM2 <: FourierFunctionMatrix} 
    """
-      tvclyap(A, C, G; adj, solver, reltol, abstol) -> W::Matrix
+      tvclyap(A, C, G; adj, solver, reltol, abstol) -> S(t)
 
    Compute the solution at the time values between [0, period] of the differential matrix Lyapunov equation 
             .
@@ -866,11 +868,25 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMa
    return PeriodicFunctionMatrix(t-> MatrixEquations.vec2triu(sol(mod(t,tsub)), her=true),period; nperiod)     
 end
 function PeriodicMatrixEquations.pcplyap(A::FourierFunctionMatrix, C::FourierFunctionMatrix; K::Int = 10, adj = false, intpol = true, solver = "non-stiff", reltol = 1.e-7, abstol = 1.e-7)
+   # if intpol
+   #    W0 = PeriodicMatrixEquations.pgclyap(A, adj ? C'*C : C*C', K;  adj, solver, reltol, abstol, stability_check = true)
+   #    return PeriodicMatrixEquations.tvcplyap(A, C, W0; adj, solver, reltol, abstol)
+   # else
+   #    U = PeriodicMatrixEquations.pgcplyap(A, C, K;  adj, solver, reltol, abstol)
+   #    PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcplyap_eval(t, U, A, C; solver, adj, reltol, abstol), U.period; nperiod = U.nperiod)
+   # end
    if intpol
+      if PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) 
+         U = PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol)
+         return PeriodicFunctionMatrix(U(0),U.period,nperiod=U.nperiod)
+      end
       W0 = PeriodicMatrixEquations.pgclyap(A, adj ? C'*C : C*C', K;  adj, solver, reltol, abstol, stability_check = true)
       return PeriodicMatrixEquations.tvcplyap(A, C, W0; adj, solver, reltol, abstol)
    else
-      U = PeriodicMatrixEquations.pgcplyap(A, C, K;  adj, solver, reltol, abstol)
+      U = PeriodicMatrixEquations.pgcplyap(A,  C, K;  adj, solver, reltol, abstol)
+      if PeriodicMatrices.isconstant(U) 
+         (K > 1 || (PeriodicMatrices.isconstant(A) && PeriodicMatrices.isconstant(C) )) && (return PeriodicFunctionMatrix(U(0),U.period,nperiod=U.nperiod))
+      end
       PeriodicFunctionMatrix(t->PeriodicMatrixEquations.tvcplyap_eval(t, U, A, C; solver, adj, reltol, abstol), U.period; nperiod = U.nperiod)
    end
 end
