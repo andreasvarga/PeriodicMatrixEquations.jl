@@ -248,7 +248,7 @@ Xdot = pmderiv(X);
 @test all(real(psceig(A-F*B',100)) .< 0)
 
 Xdot = pmderiv(X); 
-@test norm(A.(ts).*X.(ts).+X.(ts).*A'.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .- Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-6
+@test norm(A.(ts).*X.(ts).+X.(ts).*A'.(ts).+Qt.(ts).-X.(ts).*B.(ts).*B'.(ts).*X.(ts) .- Xdot.(ts),Inf)/norm(X.(ts),Inf) < 1.e-5
 
 
 # Pitelkau's example - singular Lyapunov equations

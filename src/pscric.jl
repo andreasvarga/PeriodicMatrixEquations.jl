@@ -421,6 +421,7 @@ function pgcric(A::PM1, R::PM3, Q::PM4, K::Int = 1;  scaling = true, adj = false
    if K == 1
       hpd  = tvcric(A, Rt, Qt, Ts, 0; adj, solver, reltol, abstol)
       SF = schur(hpd)
+      @show SF.values
       select = abs.(SF.values) .< 1
       n == count(select .== true) || error("The symplectic pencil is not dichotomic")
       ordschur!(SF, select)
@@ -598,7 +599,7 @@ function tvcric(A::PM1, R::PM3, Q::PM4, tf, t0; adj = false, solver = "symplecti
        function update_func!(A,u,p,t)
             A .= p(t)
        end
-       DEop = DiffEqArrayOperator(ones(T,n2,n2),update_func=update_func!)     
+       DEop = MatrixOperator(ones(T,n2,n2);update_func!)     
        prob = ODEProblem(DEop, u0, tspan, H)
        sol = solve(prob,MagnusGL6(), dt = dt, save_everystep = false)
     elseif solver == "symplectic" 

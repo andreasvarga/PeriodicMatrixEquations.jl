@@ -1,5 +1,10 @@
 # Release Notes
 
+
+## Version 0.1.2
+
+Replace `DiffEqArrayOperator` by `MatrixOperator`. 
+
 ## Version 0.1.1
 
 Full support for constant matrices implemented.
