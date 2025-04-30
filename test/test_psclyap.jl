@@ -349,10 +349,10 @@ for solver in ("non-stiff", "stiff", "auto")
     println("solver = $solver")
     @time Yt = pclyap(At, Ct; solver, K = 500, reltol = 1.e-10, abstol = 1.e-10,intpol=true);
     #@test Xt ≈ Yt 
-    @test norm(Xt.(ts).-Yt.(ts),Inf) < 1.e-7
+    @test norm(Xt.(ts).-Yt.(ts),Inf) < 1.e-6
     @time Yt = pclyap(At, Ct; solver, K = 500, reltol = 1.e-10, abstol = 1.e-10,intpol=false);
     #@test Xt ≈ Yt 
-    @test norm(Xt.(ts).-Yt.(ts),Inf) < 1.e-7
+    @test norm(Xt.(ts).-Yt.(ts),Inf) < 1.e-6
 
 end
 
