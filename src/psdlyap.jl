@@ -65,7 +65,7 @@ of the periodic matrix `A` is employed [1].
 _Reference:_
 
 [1] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
-              Int. J. Control, vol, 67, pp, 69-87, 1997.
+              Int. J. Control, vol. 67, pp. 69-87, 1997.
 """
 pdlyap(A::PeriodicArray, C::PeriodicArray; adj::Bool = true) 
 """
@@ -92,7 +92,7 @@ of the periodic matrix `A` is employed [1].
 _Reference:_
 
 [1] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
-              Int. J. Control, vol, 67, pp, 69-87, 1997.
+              Int. J. Control, vol. 67, pp. 69-87, 1997.
 """
 pdlyap2(A::PeriodicArray, C::PeriodicArray, E::PeriodicArray; stability_check = false)
 
@@ -177,7 +177,7 @@ of the periodic matrix `A` is employed [1].
 _Reference:_
 
 [1] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
-              Int. J. Control, vol, 67, pp, 69-87, 1997.
+              Int. J. Control, vol. 67, pp. 69-87, 1997.
 """
 function pslyapd(A::AbstractArray{T1, 3}, C::AbstractArray{T2, 3}; adj::Bool = true, stability_check = false) where {T1, T2}
    n = LinearAlgebra.checksquare(A[:,:,1])
@@ -301,7 +301,7 @@ of the periodic matrix `A` is employed [1].
 _Reference:_
 
 [1] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
-              Int. J. Control, vol, 67, pp, 69-87, 1997.
+              Int. J. Control, vol. 67, pp. 69-87, 1997.
 """
 function pslyapd2(A::AbstractVector{Matrix{T1}}, C::AbstractVector{Matrix{T2}}, E::AbstractVector{Matrix{T3}}; stability_check = false) where {T1, T2, T3}
    pa = length(A) 
@@ -1491,7 +1491,7 @@ function dpsylv2!(adj::Bool, n1::Int, n2::Int, KSCHUR::Int, AL::StridedArray{T,3
 
 #     [1] A. Varga.
 #         Periodic Lyapunov equations: some applications and new algorithms.
-#         Int. J. Control, vol, 67, pp, 69-87, 1997.
+#         Int. J. Control, vol. 67, pp. 69-87, 1997.
    pa = size(AL,3)
    p = size(C,3)
    ii1 = 1:n1; ii2 = 1:n2;
@@ -1849,7 +1849,7 @@ function dpsylv2krsol!(adj::Bool, n1::Int, n2::Int, KSCHUR::Int, AL::StridedArra
 #     REFERENCES
 #     [1] A. Varga.
 #         Periodic Lyapunov equations: some applications and new algorithms.
-#         Int. J. Control, vol, 67, pp, 69-87, 1997.
+#         Int. J. Control, vol. 67, pp. 69-87, 1997.
    pa = size(AL,3)
    p = size(C,3)
    ii1 = 1:n1; ii2 = 1:n2;
@@ -2037,7 +2037,7 @@ function _dpsylv2!(adj::Bool, n1::Int, n2::Int, AL::StridedArray{T,3}, AR::Strid
 
 #     [1] A. Varga.
 #         Periodic Lyapunov equations: some applications and new algorithms.
-#         Int. J. Control, vol, 67, pp, 69-87, 1997.
+#         Int. J. Control, vol. 67, pp. 69-87, 1997.
    pa = size(AL,3)
    p = size(C,3)
    ii1 = 1:n1; ii2 = 1:n2;
@@ -2156,7 +2156,7 @@ function dpsylv2(REV::Bool, N1::Int, N2::Int, KSCHUR::Int, TL::StridedArray{T,3}
 
 #     [1] A. Varga.
 #         Periodic Lyapunov equations: some applications and new algorithms.
-#         Int. J. Control, vol, 67, pp, 69-87, 1997.
+#         Int. J. Control, vol. 67, pp. 69-87, 1997.
 
 	IND(J,P) = mod( J-1, P ) + 1
    P = size(TL,3)
@@ -2731,7 +2731,7 @@ The iterative method (Algorithm 5) of [1] and its dual version are employed.
 _Reference:_
 
 [1] A. Varga. Periodic Lyapunov equations: some applications and new algorithms. 
-              Int. J. Control, vol, 67, pp, 69-87, 1997.
+              Int. J. Control, vol. 67, pp. 69-87, 1997.
 """
 pdplyap(A::PeriodicArray, C::PeriodicArray; adj::Bool = true) 
 

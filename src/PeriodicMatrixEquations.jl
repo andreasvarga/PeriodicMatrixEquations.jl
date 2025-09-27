@@ -17,11 +17,13 @@ export prdplyap, pfdplyap, pdplyap, psplyapd
 export pclyap, pfclyap, prclyap, pgclyap, pgclyap2, tvclyap, tvclyap_eval, pclyap_intpol, tvclyap_sol
 export pcplyap, pfcplyap, prcplyap, pgcplyap, tvcplyap, tvcplyap_eval
 export pcric, prcric, pfcric, tvcric, pgcric, prdric, pfdric, tvcric_eval
+export pdsylvc, prdsylvc, pfdsylvc, pssylvdc, pdsylvcs!, pssylvdckr, psylsolve2
 
 
 include("psclyap.jl")
 include("psdlyap.jl")
 include("pscric.jl")
 include("psdric.jl")
+include("psdsylv.jl")
 
 end

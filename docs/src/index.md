@@ -15,6 +15,12 @@ The available functions cover both continuous-time and discrete-time settings, b
 
 The current version of the package includes the following functions:
 
+**Solving periodic Sylvester equations (WIP)**
+
+* **[`pdsylvc`](@ref)** Solution of periodic discrete-time Sylvester equations of continuous-time flavor. 
+* **[`pfdsylvc`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations of continuous-time flavor.
+* **[`prdsylvc`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations of continuous-time flavor.
+
 **Solving periodic Lyapunov equations**
 
 * **[`pclyap`](@ref)** Solution of periodic Lyapunov differential equations. 

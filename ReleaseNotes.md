@@ -1,6 +1,10 @@
 # Release Notes
 
 
+## Version 0.2
+
+Solvers for periodic differential/difference Sylvester equations (WIP). 
+
 ## Version 0.1.2
 
 Replace `DiffEqArrayOperator` by `MatrixOperator`. 

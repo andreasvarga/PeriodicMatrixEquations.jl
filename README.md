@@ -3,7 +3,8 @@
 <!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4568159.svg)](https://doi.org/10.5281/zenodo.4568159) -->
 [![DocBuild](https://github.com/andreasvarga/PeriodicMatrixEquations.jl/workflows/CI/badge.svg)](https://github.com/andreasvarga/PeriodicMatrixEquations.jl/actions)
 [![codecov.io](https://codecov.io/gh/andreasvarga/PeriodicMatrixEquations.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/PeriodicMatrixEquations.jl?branch=master)
-[![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://andreasvarga.github.io/PeriodicMatrixEquations.jl/dev/)
+[![stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://andreasvarga.github.io/PeriodicMatrixEquations.jl/stable/)
+[![dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://andreasvarga.github.io/PeriodicMatrixEquations.jl/dev/)
 [![The MIT License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](https://github.com/andreasvarga/PeriodicMatrixEquations.jl/blob/master/LICENSE.md)
 
 ## Solution of periodic differential/difference matrix equations 
