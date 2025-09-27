@@ -3,6 +3,7 @@ module Runtests
 using Test, PeriodicMatrixEquations
 
 @testset "Test PeriodicMatrixEquations" begin
+include("test_psdsylv.jl")
 include("test_psdlyap.jl")
 include("test_psclyap.jl")
 include("test_pscric.jl")
