@@ -3,7 +3,7 @@
      pssylvdkr(A, B, C; rev = true, isgn = 1) -> X
 
 For the periodic matrices `A`, `B` and `C` compute the periodic matrix `X`, which satisfies  
-the periodic discrete-time Sylvester matrix equation of continuous-time flavour
+the periodic discrete-time Sylvester matrix equation 
 
       A(i)'*X(i+1)*B(i) + isgn*X(i) = C(i), if rev = true,
 
@@ -289,7 +289,7 @@ end
 """
     prdsylv(A, B, C; isgn = 1, fast = true) -> X
 
-Solve the reverse-time periodic discrete-time Sylvester equation of continuous-time flavour
+Solve the reverse-time periodic discrete-time Sylvester equation 
 
     A'*σX*B + isgn*X = C ,
 
@@ -304,7 +304,7 @@ prdsylv(A::PeriodicArray, B::PeriodicArray, C::PeriodicArray)
 """
     pfdsylv(A, B, C; isgn = 1, fast = true) -> X
 
-Solve the forward-time periodic discrete-time Sylvester equation of continuous-time flavour
+Solve the forward-time periodic discrete-time Sylvester equation 
 
     A*X*B' + isgn*σX = C , 
     
@@ -319,7 +319,7 @@ pfdsylv(A::PeriodicArray, B::PeriodicArray, C::PeriodicArray)
 """
     pssylvd(A, B, C; rev = false, isgn = 1, fast = true) -> X
 
-Solve the periodic discrete-time Sylvester equation of continuous-time flavour.
+Solve the periodic discrete-time Sylvester equation.
 
 For the square `n`-th order periodic matrices `A(i)`, `i = 1, ..., pa`, `B(i)`, `i = 1, ..., pb`  and 
 `C(i)`, `i = 1, ..., pc`  of periods `pa`, `pb` and `pc`, respectively, 
@@ -516,16 +516,6 @@ function pdsylvs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstrac
    end
    ONE = one(T1)
 
-   # allocate cache for 2x2 periodic Sylvester solver
-   # G = Array{T1,3}(undef,2,2,pc)
-   # WUSD = Array{Float64,3}(undef,4,4,pc)
-   # WUD = Array{Float64,3}(undef,4,4,pc)
-   # WUL = Matrix{Float64}(undef,4*pc,4)
-   # WY = Vector{Float64}(undef,4*pc)
-   # W = Matrix{Float64}(undef,8,8)
-   # qr_ws = QRWs(zeros(8), zeros(4))
-   # ormqr_ws = QROrmWs(zeros(4), qr_ws.τ)   
-
    # determine the dimensions of the diagonal blocks of real Schur form
    ba, pa1 = MatrixEquations.sfstruct(A[:,:,KSCHURA])
    bb, pb1 = MatrixEquations.sfstruct(B[:,:,KSCHURB])
@@ -533,23 +523,6 @@ function pdsylvs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstrac
    G = Array{T1,3}(undef,2,2,p)
    WA = Matrix{T1}(undef,2,2)
    W = Array{T1,3}(undef,m,2,p)
-
-   # """
-   # The (K,L)th block of X(i) is determined starting from
-   # bottom-left corner column by column by
-
-   #       A(i)[K,K]*X(i)[K,L] + isgn*X(i+1)[K,L]*B(i)[L,L] = C(i)[K,L] - R(i)[K,L]
-
-   # where
-   #                                    M                               L-1
-   #     if rev = false: R(i)[K,L] =   SUM (A(i)[K,J]*X(i)[J,L]) + isgn*SUM (X(i+1)[K,II]*B(i)[II,L])
-   #                                  J=K+1                             II=1
-   #
-   #                                       M                             L-1
-   #     if rev = true:  R(i)[K,L] = isgn*SUM (A(i)[K,J]*X(i+1)[J,L]) + SUM (X(i)[K,II]*B(i)[II,L])
-   #                                     J=K+1                           II=1
-   #
-   # """
 
    fast || (Rw = Vector{T1}(undef,16*p*p))
    if rev
@@ -591,7 +564,6 @@ function pdsylvs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstrac
                      W1 = view(WA,dkk,dll)
                      ia = mod(ii-1,pa)+1
                      ib = mod(ii-1,pb)+1
-                     #ic = mod(ii-1,p)+1
                      ii1 = mod(ii,p)+1
                      mul!(W1,adjoint(view(A,ir,k,ia)),view(C,ir,l,ii1))
                      mul!(view(y,:,:,ii),W1,view(B,l,l,ib),-ONE,ONE)
@@ -602,37 +574,35 @@ function pdsylvs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstrac
                  for ii = 1:p
                      ia = mod(ii-1,pa)+1
                      ib = mod(ii-1,pb)+1
-                     #ic = mod(ii-1,p)+1
                      ii1 = mod(ii,p)+1
                      mul!(view(W,k,dll,ii),view(C,k,il1,ii1),view(B,il1,l,ib))
                      mul!(view(y,:,:,ii),adjoint(view(A,ic,k,ia)),view(W,ic,dll,ii),-ONE,ONE)
                  end
               end
               if fast
-                 C[k,l,1:p] = psylsolve1(view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
+                 C[k,l,1:p] .= psylsolve1(view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
               else
-                 C[k,l,1:p] = pssylvdkr2(Rw, view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
+                 C[k,l,1:p] .= pssylvdkr2(Rw, view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
               end
-              #copyto!(Ckl,y)
-           i += dk
+              i += dk
           end
           j += dl
       end
    else
-         # """
-         # The (K,L)th block of X is determined starting from
-         # bottom-right corner column by column by
+      # """
+      # The (K,L)th blocks of X(j), j = 1, ..., p are determined
+      # starting from bottom-right corner column by column by
 
-         #             A(K,K)*X(K,L)*B(L,L)' + X(K,L) = C(K,L) - R(K,L)
+      #             A(j)(K,K)*X(j)(K,L)*B(j)(L,L)' + isgn*X(j+1)(K,L) = C(j)(K,L) - R(j)(K,L)
 
-         # where
-         #                        M
-         #            R(K,L) = { SUM [A(K,J)*X(J,L)] } * B(L,L)' +
-         #                      J=K+1
-         #                        M              N
-         #                       SUM { A(K,J) * SUM [X(J,I)*B(L,I)'] }.
-         #                       J=K           I=L+1
-         # """
+      # where
+      #                           M
+      #            R(j)(K,L) = { SUM [A(j)(K,J)*X(j)(J,L)] } * B(j)(L,L)' +
+      #                         J=K+1
+      #                        M                 N
+      #                       SUM { A(j)(K,J) * SUM [X(j)(J,I)*B(j)(L,I)'] }.
+      #                       J=K              I=L+1
+      # """
       j = n
       for ll = pb1:-1:1
           dl = bb[ll]
@@ -654,7 +624,6 @@ function pdsylvs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstrac
                      W1 = view(WA,dkk,dll)
                      ia = mod(ii-1,pa)+1
                      ib = mod(ii-1,pb)+1
-                     #ic = mod(ii-1,p)+1
                      mul!(W1,view(A,k,ir,ia),view(C,ir,l,ii))
                      mul!(view(y,:,:,ii),W1,adjoint(view(B,l,l,ib)),-ONE,ONE)
                  end
@@ -664,7 +633,6 @@ function pdsylvs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstrac
                  for ii = 1:p
                      ia = mod(ii-1,pa)+1
                      ib = mod(ii-1,pb)+1
-                     #ic = mod(ii-1,p)+1
                      mul!(view(W,k,dll,ii),view(C,k,il1,ii),adjoint(view(B,l,il1,ib)))
                      mul!(view(y,:,:,ii),view(A,k,ic,ia),view(W,ic,dll,ii),-ONE,ONE)
                  end
@@ -720,10 +688,6 @@ function psylsolve1(A::AbstractArray{T,3}, B::AbstractArray{T,3}, C::AbstractArr
    Xv =  PeriodicSchurDecompositions._babd_solve!(R, Zu, Zr, y)
    return rev ? reverse(reshape(Xv,p1,p2,p),dims=3) : reshape(Xv,p1,p2,p)
 end
-
-
-
-#######
 
 for PM in (:PeriodicArray, :PeriodicMatrix)
     @eval begin
@@ -865,6 +829,7 @@ _Reference:_
     set of eigenvalues. BIT Numerical Mathematics vol. 47, pp. 763–791,  2007.             
 """
 function pssylvdc(A::AbstractArray{T1, 3}, B::AbstractArray{T2, 3}, C::AbstractArray{T3, 3}; rev::Bool = false, isgn = 1, fast = true) where {T1, T2, T3}
+   # alternative way to solve the reverse equation
    # if rev
    #    Y = pssylvdc(PermutedDimsArray(B,[2,1,3]),PermutedDimsArray(A,[2,1,3]),PermutedDimsArray(C,[2,1,3]); rev = false, isgn)
    #    return permutedims(Y,[2,1,3])
@@ -960,6 +925,7 @@ function pssylvdc(A::AbstractVector{Matrix{T1}}, B::AbstractVector{Matrix{T2}}, 
    [copyto!(view(B1,1:mb[i],1:nb[i],i), T.(B[i])) for i in 1:pb]
    [copyto!(view(C1,1:mc[i],1:nc[i],i), T.(C[i])) for i in 1:pc] 
 
+   # alternative way to solve the reverse equation
    # if rev
    #    Y = pssylvdc(PermutedDimsArray(B1,[2,1,3]),PermutedDimsArray(A1,[2,1,3]),PermutedDimsArray(C1,[2,1,3]); rev = false, isgn)
    #    X = permutedims(Y,[2,1,3])
@@ -1084,6 +1050,7 @@ function pssylvdckr(A::AbstractArray{T1, 3}, B::AbstractArray{T2, 3}, C::Abstrac
 end
 function pssylvdckr2(Rw::Vector{T}, A::AbstractArray{T,3}, B::AbstractArray{T,3}, C::AbstractArray{T,3}; rev = false, isgn = 1) where {T}
    # version intended for solving periodic Sylvester equations of orders up to 2. 
+   # Rw must have at least p^2*m^2*n^2 elements
    p = size(C,3)
    m = LinearAlgebra.checksquare(A[:,:,1]) 
    n = LinearAlgebra.checksquare(B[:,:,1]) 
@@ -1283,16 +1250,6 @@ function pdsylvcs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstra
    end
    ONE = one(T1)
 
-   # allocate cache for 2x2 periodic Sylvester solver
-   # G = Array{T1,3}(undef,2,2,pc)
-   # WUSD = Array{Float64,3}(undef,4,4,pc)
-   # WUD = Array{Float64,3}(undef,4,4,pc)
-   # WUL = Matrix{Float64}(undef,4*pc,4)
-   # WY = Vector{Float64}(undef,4*pc)
-   # W = Matrix{Float64}(undef,8,8)
-   # qr_ws = QRWs(zeros(8), zeros(4))
-   # ormqr_ws = QROrmWs(zeros(4), qr_ws.τ)   
-
    # determine the dimensions of the diagonal blocks of real Schur form
    ba, pa1 = MatrixEquations.sfstruct(A[:,:,KSCHURA])
    bb, pb1 = MatrixEquations.sfstruct(B[:,:,KSCHURB])
@@ -1353,9 +1310,9 @@ function pdsylvcs!(KSCHURA::Int, A::AbstractArray{T1,3}, KSCHURB::Int, B::Abstra
               end
            end
            if fast
-              C[k,l,1:p] = psylsolve2(view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
+              C[k,l,1:p] .= psylsolve2(view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
            else
-              C[k,l,1:p] = pssylvdckr2(Rw, view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
+              C[k,l,1:p] .= pssylvdckr2(Rw, view(A,k,k,:), view(B,l,l,:), y; rev, isgn)
            end
            i -= dk
        end
@@ -1400,7 +1357,7 @@ function psylsolve2(A::AbstractArray{T,3}, B::AbstractArray{T,3}, C::AbstractArr
    end
    indc = [p; 1:p-1]
    y = C[:,:,indc][:]
-   R, Zu, Zr =  babdqr!(Zd, Zl, y)
+   R, Zu, Zr = babdqr!(Zd, Zl, y)
    for r in R
          PeriodicSchurDecompositions._checkqr(r)
    end
