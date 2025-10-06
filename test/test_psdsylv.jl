@@ -11,6 +11,236 @@ using LinearAlgebra
 
 println("Test_psdsylv")
 
+@testset "pssylvdkr" begin
+
+A0 = [2.7 0.9;-1.1 2.3]; A1 = [4.2 1.3; -1.9 3.8]; A2 = [6.1 3.8; -3.1 6.3];
+B0 = [1.5 -0.2; 0.4 1.]; B1 = [2.1 -0.4; 0.4 2.]; B2 = [3.1 -0.6; 0.7 3.5];
+C0 = [13.2 10.6; 0.6 8.4]; C1 = [26.4 21.2; 1.2 16.8]; C2 = [38.6 32.1; 1.6 24.2];
+
+A = PeriodicArray(reshape([A0 A1 A2],2,2,3),3); 
+B = PeriodicArray(reshape([B0 B1 B2],2,2,3),3); 
+C = PeriodicArray(reshape([C0 C1 C2],2,2,3),3); 
+
+Y = pssylvdkr(A.M,B.M,C.M)
+X = PeriodicArray(Y,3)
+@test norm(A*X*B'+pmshift(X)-C) < 1.e-13
+
+Y = pssylvdkr(A.M,B.M,C.M,rev = true)
+X = PeriodicArray(Y,3)
+@test norm(A'*pmshift(X)*B+X-C) < 1.e-13
+
+Y = PeriodicMatrixEquations.pssylvdkr2(rand(200),A.M,B.M,C.M)
+X = PeriodicArray(Y,3)
+@test norm(A*X*B'+pmshift(X)-C) < 1.e-13
+
+Y = PeriodicMatrixEquations.pssylvdkr2(rand(200),A.M,B.M,C.M,rev = true)
+X = PeriodicArray(Y,3)
+@test norm(A'*pmshift(X)*B+X-C) < 1.e-13
+
+Y = pssylvdkr(A.M,B.M,C.M,isgn = -1)
+X = PeriodicArray(Y,3)
+@test norm(A*X*B'-pmshift(X)-C) < 1.e-13
+
+Y = pssylvdkr(A.M,B.M,C.M,rev = true,isgn = -1)
+X = PeriodicArray(Y,3)
+@test norm(A'*pmshift(X)*B-X-C) < 1.e-13
+
+
+A = PeriodicArray(reshape(A0,2,2,1),3); 
+B = PeriodicArray(reshape(B0,2,2,1),3); 
+C = PeriodicArray(reshape(C0,2,2,1),3); 
+
+Y = pssylvdkr(A.M,B.M,C.M)
+X = PeriodicArray(Y,3)
+@test norm(A*X*B'+pmshift(X)-C) < 1.e-13
+
+Y = pssylvdkr(A.M,B.M,C.M,rev = true)
+X = PeriodicArray(Y,3)
+@test norm(A'*pmshift(X)*B+X-C) < 1.e-13
+
+At = PeriodicMatrix([A0, A1, A2],3); 
+Bt = PeriodicMatrix([B0, B1, B2],3); 
+Ct = PeriodicMatrix([C0, C1, C2],3); 
+
+Yt = pssylvdkr(At.M,Bt.M,Ct.M)
+Xt = PeriodicMatrix(Yt,3)
+@test norm(At*Xt*Bt'+pmshift(Xt)-Ct) < 1.e-13
+
+Yt = pssylvdkr(At.M,Bt.M,Ct.M,rev = true)
+Xt = PeriodicMatrix(Yt,3)
+@test norm(At'*pmshift(Xt)*Bt+Xt-Ct) < 1.e-13
+
+A00 = [2.7 0.9]; A01 = [4.2;;]; A02 = [6.1; -3.1];
+C00 = [13.2 10.6;]; C01 = [26.4 21.2;]; C02 = [38.6 32.1; 1.6 24.2];
+At0 = PeriodicMatrix([A00, A01, A02],3); 
+Bt0 = PeriodicMatrix([B0, B1, B2],3); 
+Ct0 = PeriodicMatrix([C00, C01, C02],3); 
+Yt0 = pssylvdkr(At0.M,Bt0.M,Ct0.M)
+Xt0 = PeriodicMatrix(Yt0,3)
+@test norm(At0*Xt0*Bt0'+pmshift(Xt0)-Ct0) < 1.e-13
+
+B00 = [2.7 0.9]; B01 = [4.2;;]; B02 = [6.1; -3.1;;];
+C00 = [13.2 .6; 3.4 5.7]; C01 = [26.4; 21.2;]; C02 = [38.6; 1.6];
+Bt0 = PeriodicMatrix([B00, B01, B02],3); 
+At0 = PeriodicMatrix([B0, B1, B2],3); 
+Ct0 = PeriodicMatrix([C00, C01, C02],3); 
+Yt0 = pssylvdkr(At0.M,Bt0.M,Ct0.M,rev=true)
+Xt0 = PeriodicMatrix(Yt0,3)
+@test norm(At0'*pmshift(Xt0)*Bt0+Xt0-Ct0) < 1.e-13
+
+
+At0 = PeriodicMatrix([A00, A01, A02],3); 
+Yt0 = pssylvdkr(At0.M,At0.M,(At0*At0').M)
+Xt0 = PeriodicMatrix(Yt0,3)
+@test norm(At0*Xt0*At0' + pmshift(Xt0)- At0*At0') < 1.e-13
+
+At0 = PeriodicMatrix([A00, A01, A02],3); 
+Yt0 = pssylvdkr(At0.M,At0.M,(At0'*At0).M,rev = true)
+Xt0 = PeriodicMatrix(Yt0,3)
+@test norm(At0'*pmshift(Xt0)*At0 + Xt0- At0'*At0) < 1.e-13
+
+end
+
+@testset "pdsylv" begin
+
+A0 = [2.7 0.9;-1.1 2.3]; A1 = [4.2 1.3; -1.9 3.8]; A2 = [6.1 3.8; -3.1 6.3];
+B0 = [1.5 -0.2; 0.4 1.]; B1 = [2.1 -0.4; 0.4 2.]; B2 = [3.1 -0.6; 0.7 3.5];
+C0 = [13.2 10.6; 0.6 8.4]; C1 = [26.4 21.2; 1.2 16.8]; C2 = [38.6 32.1; 1.6 24.2];
+
+fast = true; isgn = 1
+for fast in (true,false)
+for isgn in (-1,1)
+
+
+A = PeriodicArray(reshape([A0 A1 A2],2,2,3),3); 
+B = PeriodicArray(reshape([B0 B1 B2],2,2,3),3); 
+C = PeriodicArray(reshape([C0 C1 C2],2,2,3),3); 
+
+X = pdsylv(A,B,C; isgn, fast)
+@test norm(A*X*B'+isgn*pmshift(X)-C) < 1.e-13
+
+X = pdsylv(A,B,C;isgn,rev = true, fast)
+@test norm(A'*pmshift(X)*B+isgn*X-C) < 1.e-13
+
+X = pfdsylv(A,B,C; isgn, fast)
+@test norm(A*X*B'+isgn*pmshift(X)-C) < 1.e-13
+
+X = prdsylv(A,B,C; isgn, fast)
+@test norm(A'*pmshift(X)*B+isgn*X-C) < 1.e-13
+
+@time X1 = psylsolve1(A.M,B.M,C.M; isgn)
+X = PeriodicArray(X1,3)
+@test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+X1 = psylsolve1(A.M,B.M,C.M; isgn, rev = true)
+X = PeriodicArray(X1,3)
+@test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+
+
+
+At = PeriodicMatrix([A0, A1, A2],3); 
+Bt = PeriodicMatrix([B0, B1, B2],3); 
+Ct = PeriodicMatrix([C0, C1, C2],3); 
+
+Xt = pdsylv(At,Bt,Ct; isgn, fast)
+@test norm(At*Xt*Bt'+isgn*pmshift(Xt)-Ct) < 1.e-13
+
+Xt = pdsylv(At,Bt,Ct; isgn, rev = true, fast)
+@test norm(At'*pmshift(Xt)*Bt+isgn*Xt-Ct) < 1.e-13
+
+
+
+A00 = [2.7 0.9]; A01 = [4.2;;]; A02 = [6.1; -3.1];
+C00 = [13.2 10.6;]; C01 = [26.4 21.2;]; C02 = [38.6 32.1; 1.6 24.2];
+At0 = PeriodicMatrix([A00, A01, A02],3); 
+Bt0 = PeriodicMatrix([B0, B1, B2],3); 
+Ct0 = PeriodicMatrix([C00, C01, C02],3); 
+Xt0 = pdsylv(At0,Bt0,Ct0; isgn, fast)
+@test norm(At0*Xt0*Bt0'+isgn*pmshift(Xt0)-Ct0) < 1.e-13
+
+B00 = [2.7 0.9]; B01 = [4.2;;]; B02 = [6.1; -3.1;;];
+C00 = [13.2 .6; 3.4 5.7]; C01 = [26.4; 21.2;]; C02 = [38.6; 1.6];
+Bt0 = PeriodicMatrix([B00, B01, B02],3); 
+At0 = PeriodicMatrix([B0, B1, B2],3); 
+Ct0 = PeriodicMatrix([C00, C01, C02],3); 
+Xt0 = pdsylv(At0,Bt0,Ct0; isgn, fast, rev=true)
+@test norm(At0'*pmshift(Xt0)*Bt0+isgn*Xt0-Ct0) < 1.e-13
+
+
+At0 = PeriodicMatrix([A00, A01, A02],3); 
+Xt0 = pdsylv(At0,At0,(At0*At0'); isgn, fast)
+@test norm(At0*Xt0*At0' + isgn*pmshift(Xt0)- At0*At0') < 1.e-13
+
+At0 = PeriodicMatrix([A00, A01, A02],3); 
+Xt0 = pdsylv(At0,At0,(At0'*At0); isgn, fast, rev = true)
+@test norm(At0'*pmshift(Xt0)*At0 + isgn*Xt0- At0'*At0) < 1.e-13
+
+
+
+A = PeriodicArray(rand(5,5,3),3);
+B = PeriodicArray(rand(3,3,3),3);
+C = PeriodicArray(rand(5,3,3),3);
+@time X = pdsylv(A,B,C; isgn, fast)
+@test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+X = pdsylv(A,B,C;isgn,rev = true, fast)
+@test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+
+@time X1 = psylsolve1(A.M,B.M,C.M; isgn)
+X = PeriodicArray(X1,3)
+@test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+X1 = psylsolve1(A.M,B.M,C.M; isgn, rev = true)
+X = PeriodicArray(X1,3)
+@test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+
+
+
+A = PeriodicArray(rand(5,5),3,nperiod = 3);
+B = PeriodicArray(rand(3,3,3),3);
+C = PeriodicArray(rand(5,3,1),3;nperiod=3);
+@time X = pdsylv(A,B,C; isgn, fast)
+@test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+X = pdsylv(A,B,C;isgn,rev = true, fast)
+@test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+
+A = PeriodicArray(rand(5,5),3,nperiod = 3);
+B = PeriodicArray(rand(3,3),3,nperiod = 3);
+C = PeriodicArray(rand(5,3,1),3;nperiod=3);
+@time X = pdsylv(A,B,C; isgn, fast)
+@test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+X = pdsylv(A,B,C;isgn,rev = true, fast)
+@test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+
+
+
+if fast
+    @time X1 = psylsolve1(A.M,B.M,C.M; isgn)
+    X = PeriodicArray(X1,3)
+    @test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+    X1 = psylsolve1(A.M,B.M,C.M; isgn, rev = true)
+    X = PeriodicArray(X1,3)
+    @test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+
+    n = 50; m = 30; p = 300
+    A = PeriodicArray(rand(n,n,p),p);
+    B = PeriodicArray(rand(m,m,p),p);
+    C = PeriodicArray(rand(n,m,p),p);
+    @time X = pdsylv(A,B,C; isgn, fast)
+    @test norm(A*X*B'+isgn*pmshift(X)-C)/norm(X) < 1.e-13
+
+    X = pdsylv(A,B,C;isgn,rev = true, fast)
+    @test norm(A'*pmshift(X)*B+isgn*X-C)/norm(X) < 1.e-13
+end
+
+
+end
+end
+end
+
 
 @testset "pdsylvc" begin
 
@@ -25,8 +255,8 @@ A = PeriodicArray(reshape([A0 A1 A2],2,2,3),3);
 B = PeriodicArray(reshape([B0 B1 B2],2,2,3),3); 
 C = PeriodicArray(reshape([C0 C1 C2],2,2,3),3); 
 
-X = pdsylvc(A,B,C; isgn, fast)
-@test norm(A*X+isgn*pmshift(X)*B-C) < 1.e-13
+X = pdsylv(A,B,C; isgn, fast)
+@test norm(A*X*B'+isgn*pmshift(X)-C) < 1.e-13
 
 X = pdsylvc(A,B,C;isgn,rev = true, fast)
 @test norm(isgn*A*pmshift(X)+X*B-C) < 1.e-13

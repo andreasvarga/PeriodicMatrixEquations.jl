@@ -531,26 +531,26 @@ function pslyapdkr(A::AbstractArray{T1, 3}, C::AbstractArray{T2, 3}; adj = true)
    N = p*n2
    R = zeros(promote_type(T1,T2), N, N)
    if adj
-      copyto!(view(R,1:n2,N-n2+1:N),kron(A[:,:,pa]',A[:,:,pa]')) 
+      copyto!(view(R,1:n2,N-n2+1:N),kron(transpose(A[:,:,pa]),A[:,:,pa]')) 
       i1 = n2+1; j1 = 1 
       for i = p-1:-1:1         
           ia = mod(i-1,pa)+1
           i2 = i1+n2-1
           j2 = j1+n2-1
-          copyto!(view(R,i1:i2,j1:j2),kron(A[:,:,ia]',A[:,:,ia]')) 
+          copyto!(view(R,i1:i2,j1:j2),kron(transpose(A[:,:,ia]),A[:,:,ia]')) 
           i1 = i2+1
           j1 = j2+1
       end
       indc = mod.(p-1:-1:0,pc).+1
-      return reshape((I-R) \ (C[:,:,indc][:]), n, n, p)[:,:,indc] 
+      return reshape((I-R) \ (C[:,:,indc][:]), n, n, p)[:,:,p:-1:1] 
    else
-      copyto!(view(R,1:n2,N-n2+1:N),kron(A[:,:,pa],A[:,:,pa])) 
+      copyto!(view(R,1:n2,N-n2+1:N),kron(conj(A[:,:,pa]),A[:,:,pa])) 
       (i2, j2) = (n2+n2, n2)
       for i = 1:p-1
           i1 = i2-n2+1
           j1 = j2-n2+1
           ia = mod(i-1,pa)+1
-          copyto!(view(R,i1:i2,j1:j2),kron(A[:,:,ia],A[:,:,ia])) 
+          copyto!(view(R,i1:i2,j1:j2),kron(conj(A[:,:,ia]),A[:,:,ia])) 
           i2 += n2
           j2 += n2
       end
@@ -585,7 +585,7 @@ function pslyapdkr(A::AbstractVector{Matrix{T1}}, C::AbstractVector{Matrix{T2}};
    Y = zeros(T, N)
    
    if adj 
-      copyto!(view(R,1:n2[pa],N-m2[pa]+1:N),kron(A[pa]',A[pa]')) 
+      copyto!(view(R,1:n2[pa],N-m2[pa]+1:N),kron(transpose(A[pa]),A[pa]')) 
       copyto!(view(Y,1:n2[pa]),C[pa][:]) 
       i1 = n2[pa]+1; j1 = 1 
       for i = p-1:-1:1         
@@ -593,7 +593,7 @@ function pslyapdkr(A::AbstractVector{Matrix{T1}}, C::AbstractVector{Matrix{T2}};
           ic = mod(i-1,pc)+1
           i2 = i1+n2[ia]-1
           j2 = j1+m2[ia]-1
-          copyto!(view(R,i1:i2,j1:j2),kron(A[ia]',A[ia]')) 
+          copyto!(view(R,i1:i2,j1:j2),kron(transpose(A[ia]),A[ia]')) 
           copyto!(view(Y,i1:i2),C[ic][:]) 
           i1 = i2+1
           j1 = j2+1
@@ -610,7 +610,7 @@ function pslyapdkr(A::AbstractVector{Matrix{T1}}, C::AbstractVector{Matrix{T2}};
       end
       return z
    else
-      copyto!(view(R,1:m2[pa],N-n2[pa]+1:N),kron(A[pa],A[pa])) 
+      copyto!(view(R,1:m2[pa],N-n2[pa]+1:N),kron(conj(A[pa]),A[pa])) 
       copyto!(view(Y,1:m2[pa]),C[pa][:]) 
       i1 = m2[pa]+1; j1 = 1 
       for i = 1:p-1
@@ -618,7 +618,7 @@ function pslyapdkr(A::AbstractVector{Matrix{T1}}, C::AbstractVector{Matrix{T2}};
           ic = mod(i-1,pc)+1
           i2 = i1+m2[ia]-1
           j2 = j1+n2[ia]-1
-          copyto!(view(R,i1:i2,j1:j2),kron(A[ia],A[ia])) 
+          copyto!(view(R,i1:i2,j1:j2),kron(conj(A[ia]),A[ia])) 
           copyto!(view(Y,i1:i2),C[ic][:]) 
           i1 = i2+1
           j1 = j2+1

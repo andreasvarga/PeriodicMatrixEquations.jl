@@ -17,6 +17,9 @@ The current version of the package includes the following functions:
 
 **Solving periodic Sylvester equations (WIP)**
 
+* **[`pdsylv`](@ref)** Solution of periodic discrete-time Sylvester equations. 
+* **[`pfdsylv`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations.
+* **[`prdsylv`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations.
 * **[`pdsylvc`](@ref)** Solution of periodic discrete-time Sylvester equations of continuous-time flavor. 
 * **[`pfdsylvc`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations of continuous-time flavor.
 * **[`prdsylvc`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations of continuous-time flavor.
