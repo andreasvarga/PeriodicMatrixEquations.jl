@@ -5,7 +5,6 @@ using ApproxFun
 using Symbolics
 using Test
 using LinearAlgebra
-using Symbolics
 
 println("Test_psclyap")
 

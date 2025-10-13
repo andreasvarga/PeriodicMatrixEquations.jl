@@ -3,7 +3,7 @@
 
 ## Version 0.2
 
-Solvers for periodic differential/difference Sylvester equations (WIP). 
+Solvers for periodic differential/difference Sylvester equations. 
 
 ## Version 0.1.2
 

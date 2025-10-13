@@ -14,6 +14,7 @@ import LinearAlgebra: BlasInt, BlasFloat, BlasReal, BlasComplex
 
 export pdlyap, pdlyap2, prdlyap, pfdlyap, pslyapd, pslyapd!, pslyapd2, pslyapd2!, pdlyaps!, pdlyaps1!, pdlyaps2!, pdlyaps3!, dpsylv2, dpsylv2!, pslyapdkr, dpsylv2krsol!, kronset!
 export prdplyap, pfdplyap, pdplyap, psplyapd
+export pcsylv, pfcsylv, prcsylv, pgcsylv, tvcsylv, tvcsylv_eval, pcsylv_intpol, tvcsylv_sol
 export pclyap, pfclyap, prclyap, pgclyap, pgclyap2, tvclyap, tvclyap_eval, pclyap_intpol, tvclyap_sol
 export pcplyap, pfcplyap, prcplyap, pgcplyap, tvcplyap, tvcplyap_eval
 export pcric, prcric, pfcric, tvcric, pgcric, prdric, pfdric, tvcric_eval
@@ -23,8 +24,9 @@ export pdsylv, prdsylv, pfdsylv, pssylvd, pdsylvs!, pssylvdkr, psylsolve1
 
 include("psclyap.jl")
 include("psdlyap.jl")
+include("pscsylv.jl")
+include("psdsylv.jl")
 include("pscric.jl")
 include("psdric.jl")
-include("psdsylv.jl")
 
 end

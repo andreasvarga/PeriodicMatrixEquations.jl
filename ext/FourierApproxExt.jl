@@ -9,6 +9,7 @@ using IRKGaussLegendre
 using MatrixEquations
 
 
+include("pscsylv_Fourier.jl")
 include("psclyap_Fourier.jl")
 include("pscric_Fourier.jl")
 

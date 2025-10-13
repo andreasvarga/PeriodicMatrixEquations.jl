@@ -1,7 +1,12 @@
 # Periodic Sylvester equation solvers 
 
-## Periodic differential Sylvester equations (in preparation)
+## Periodic differential Sylvester equations 
 
+* **[`pcsylv`](@ref)** Solution of periodic Sylvester differential equations. 
+* **[`prcsylv`](@ref)** Solution of reverse-time periodic Sylvester differential equations. 
+* **[`pfcsylv`](@ref)**  Solution of forward-time periodic Sylvester differential equations.
+* **[`pgcsylv`](@ref)** Computation of periodic generators for periodic Sylvester differential equations.
+* **[`tvcsylv_eval`](@ref)** Evaluation of time value of solution from the computed periodic generator.
 
 ## Periodic difference Sylvester equations 
 
@@ -14,10 +19,16 @@
 
 
 ### Periodic differential Sylvester equation solvers 
-```@docs
-```
-### Periodic difference Sylvester equation solvers 
 
+```@docs
+pcsylv
+prcsylv
+pfcsylv
+pgcsylv
+tvcsylv_eval
+```
+
+### Periodic difference Sylvester equation solvers 
 
 ```@docs
 pdsylv

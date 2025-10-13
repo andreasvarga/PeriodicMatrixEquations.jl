@@ -11,18 +11,9 @@ end
 [![Code on Github.](https://img.shields.io/badge/code%20on-github-blue.svg)](https://github.com/andreasvarga/PeriodicMatrixEquations.jl)
 
 `PeriodicMatrixEquations.jl` is a collection of Julia functions for the solution of several categories of periodic differential/difference equations. The implementation of solvers relies on the periodic matrix objects defined within the [`PeriodicMatrices`](https://github.com/andreasvarga/PeriodicMatrices.jl) package. 
-The available functions cover both continuous-time and discrete-time settings, by solving, respectively, periodic differential and difference Lyapunov and Riccati equations with real periodic matrices. The available solvers rely on efficient structure preserving methods using the periodic Schur decomposition of a product of matrices. The solutions of periodic differential equations are determined as single- or multiple-point periodic generators, which allow the efficient computation of the solutions at arbitrary time values by integrating the appropriate differential equations. Akternatively, interpolation with cubic splines can be used to determine the solution at arbitrary time values.   
+The available functions cover both continuous-time and discrete-time settings, by solving, respectively, periodic differential and difference Lyapunov, Sylvester and Riccati equations with real periodic matrices. The available solvers rely on efficient structure preserving methods using the periodic Schur decomposition of a product of matrices. The solutions of periodic differential equations are determined as single- or multiple-point periodic generators, which allow the efficient computation of the solutions at arbitrary time values by integrating the appropriate differential equations. Akternatively, interpolation with cubic splines can be used to determine the solution at arbitrary time values.   
 
 The current version of the package includes the following functions:
-
-**Solving periodic Sylvester equations (WIP)**
-
-* **[`pdsylv`](@ref)** Solution of periodic discrete-time Sylvester equations. 
-* **[`pfdsylv`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations.
-* **[`prdsylv`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations.
-* **[`pdsylvc`](@ref)** Solution of periodic discrete-time Sylvester equations of continuous-time flavor. 
-* **[`pfdsylvc`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations of continuous-time flavor.
-* **[`prdsylvc`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations of continuous-time flavor.
 
 **Solving periodic Lyapunov equations**
 
@@ -40,6 +31,20 @@ The current version of the package includes the following functions:
 * **[`pdplyap`](@ref)** Solution of positve periodic discrete-time Lyapunov equations. 
 * **[`prdplyap`](@ref)** Solution of positve reverse-time periodic discrete-time Lyapunov equations. 
 * **[`pfdplyap`](@ref)**  Solution of positve forward-time periodic discrete-time Lyapunov equations.
+
+**Solving periodic Sylvester equations**
+
+
+* **[`pcsylv`](@ref)** Solution of periodic Sylvester differential equations. 
+* **[`prcsylv`](@ref)** Solution of reverse-time periodic Sylvester differential equations. 
+* **[`pfcsylv`](@ref)**  Solution of forward-time periodic Sylvester differential equations.
+* **[`pgcsylv`](@ref)** Computation of periodic generators for periodic Sylvester differential equations.
+* **[`pdsylv`](@ref)** Solution of periodic discrete-time Sylvester equations. 
+* **[`pfdsylv`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations.
+* **[`prdsylv`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations.
+* **[`pdsylvc`](@ref)** Solution of periodic discrete-time Sylvester equations of continuous-time flavor. 
+* **[`pfdsylvc`](@ref)** Solution of forward-time periodic discrete-time Sylvester equations of continuous-time flavor.
+* **[`prdsylvc`](@ref)** Solution of reverse-time periodic discrete-time Sylvester equations of continuous-time flavor.
 
 **Solving periodic Riccati equations**
 

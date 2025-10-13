@@ -109,15 +109,9 @@ or
     
 The periodic matrices `A` and `C` must have the same type, the same dimensions and commensurate periods, 
 and additionally `C` must be symmetric. 
-If `A` and `C` have the types `PeriodicFunctionMatrix`, `HarmonicArray`, `FourierFunctionMatrix` or `PeriodicTimeSeriesMatrix`, 
-then the resulting `X` is a collection of periodic generator matrices determined 
+The resulting `X` is a collection of periodic generator matrices determined 
 as a periodic time-series matrix with `N` components, where `N = 1` if `A` and `C` are constant matrices
 and `N = K` otherwise. 
-If `A` and `C` have the type `PeriodicSwitchingMatrix`, then `X` is a collection of periodic generator matrices 
-determined as a periodic switching matrix,
-whose switching times are the unique switching times contained in the union of the switching times of `A` and `C`. 
-If `K > 1`, a refined grid of `K` equidistant values is used for each two consecutive 
-switching times in the union.      
 The period of `X` is set to the least common commensurate period of `A` and `C` and the number of subperiods
 is adjusted accordingly. Any component matrix of `X` is a valid initial value to be used to generate the  
 solution over a full period by integrating the appropriate differential equation. 

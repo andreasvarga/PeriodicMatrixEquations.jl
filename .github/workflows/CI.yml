@@ -31,7 +31,7 @@ jobs:
       matrix:
         version:
           - '1' 
-          - 'pre'
+          # - 'pre'
           # - 'nightly' 
         os:  
           - ubuntu-latest

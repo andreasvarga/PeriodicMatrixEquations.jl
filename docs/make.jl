@@ -9,8 +9,8 @@ makedocs(warnonly = true,
   pages    = [
       "Home"   => "index.md",
       "Library" => [ 
-          "pssylv.md",
           "pslyap.md",
+          "pssylv.md",
           "psric.md",
          ],
      "Utilities" => [

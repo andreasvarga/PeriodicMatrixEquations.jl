@@ -29,7 +29,7 @@ equation using the periodic Schur method of [2].
 The obtained periodic generator is finally converted into a periodic function matrix which determines for a given `t` 
 the function value `X(t)` by interpolating the solution of the appropriate differential equations if `intpol = true` (default)  
 or by integrating the appropriate ODE from the nearest grid point value if `intpol = false`.
-For the interplation-based evaluation the integer keyword argument `N` can be used to split the integration domain (i.e., one period) 
+For the interpolation-based evaluation the integer keyword argument `N` can be used to split the integration domain (i.e., one period) 
 into `N` subdomains to perform the interpolations separately in each domain.
 The default value of `N` is `N = 1`.  
 
@@ -286,12 +286,16 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
          Threads.@threads for i = K:-1:1
             @inbounds Cd[:,:,i]  = tvclyap(A, C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol) 
          end
+         @show Ad, Cd
          X = pslyapd(Ad, Cd; adj)
+         @show X
       else
          Threads.@threads for i = 1:K
                @inbounds Cd[:,:,i]  = tvclyap(A, C, i*Ts, (i-1)*Ts; adj, solver, reltol, abstol) 
          end
+         @show Ad, Cd
          X = pslyapd(Ad, Cd; adj)
+         @show X
       end
    end
    return PeriodicTimeSeriesMatrix([X[:,:,i] for i in 1:size(X,3)], period; nperiod)
@@ -1043,7 +1047,7 @@ function PeriodicMatrixEquations.tvclyap(A::PM1, C::PM2, W::PeriodicTimeSeriesMa
    """
       tvclyap(A, C, G; adj, solver, reltol, abstol) -> W::Matrix
 
-   Compute the solution at the time values between [0, period] of the differential matrix Lyapunov equation 
+   Compute the solution at the time values between [0, period] of the differential matrix Sylvester equation 
             .
             W(t) = A(t)*W(t)+W(t)*A'(t)+C(t), W(0) = G(0), if adj = false
 
