@@ -286,16 +286,12 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
          Threads.@threads for i = K:-1:1
             @inbounds Cd[:,:,i]  = tvclyap(A, C, (i-1)*Ts, i*Ts; adj, solver, reltol, abstol) 
          end
-         @show Ad, Cd
          X = pslyapd(Ad, Cd; adj)
-         @show X
       else
          Threads.@threads for i = 1:K
                @inbounds Cd[:,:,i]  = tvclyap(A, C, i*Ts, (i-1)*Ts; adj, solver, reltol, abstol) 
          end
-         @show Ad, Cd
          X = pslyapd(Ad, Cd; adj)
-         @show X
       end
    end
    return PeriodicTimeSeriesMatrix([X[:,:,i] for i in 1:size(X,3)], period; nperiod)
@@ -551,10 +547,6 @@ function pgclyap(A::PM1, C::PM2, K::Int = 1; adj = false, solver = "non-stiff", 
             K == 1 || [Cd[:,:,j] = Cd[:,:,k] for j in k+1:k+K-1]  
          end
          X = pslyapd(Ad, Cd; adj)
-         # A1 = PeriodicArray(Ad,A.period; nperiod = A.nperiod)
-         # C1 = PeriodicArray(Cd,C.period; nperiod = C.nperiod)
-         # X1 = PeriodicArray(X,period; nperiod)
-         # @show norm(A1*X1*A1'+C1-pmshift(X1))
       end
    end
    if K == 1
