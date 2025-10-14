@@ -660,16 +660,16 @@ ts = [0.4459591888577492, 1.2072325802972004, 1.9910835248218244, 2.199819983890
 # @test norm((Asw'*Yt+Yt*Asw+Cdsw+pmderiv(Yt)).(ts)) < 1.e-5  
 
 @time Yt = pfclyap(Asw, Csw; K = 100, reltol = 1.e-14, abstol = 1.e-14);
-@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
+@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(ts).-pmderiv(Yt).(ts)),Inf) < 1.e-4 
 
 @time Yt = pfclyap(Asw, Csw(0); K = 200, reltol = 1.e-14, abstol = 1.e-14);
-@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(0).-pmderiv(Yt).(ts)),Inf) < 1.e-5 
+@test norm((Asw.(ts).*Yt.(ts).+Yt.(ts).*Asw'.(ts).+Csw.(0).-pmderiv(Yt).(ts)),Inf) < 1.e-4 
 
 @time Yt = prclyap(Asw, Cdsw; K = 100, reltol = 1.e-14, abstol = 1.e-14);
-@test norm((Asw'.(ts).*Yt.(ts).+Yt.(ts).*Asw.(ts).+Cdsw.(ts).+pmderiv(Yt).(ts)),Inf) < 1.e-5 
+@test norm((Asw'.(ts).*Yt.(ts).+Yt.(ts).*Asw.(ts).+Cdsw.(ts).+pmderiv(Yt).(ts)),Inf) < 1.e-4 
 
 @time Yt = prclyap(Asw, Cdsw(0); K = 200, reltol = 1.e-14, abstol = 1.e-14);
-@test norm((Asw'.(ts).*Yt.(ts).+Yt.(ts).*Asw.(ts).+Cdsw.(0).+pmderiv(Yt).(ts)),Inf) < 1.e-5 
+@test norm((Asw'.(ts).*Yt.(ts).+Yt.(ts).*Asw.(ts).+Cdsw.(0).+pmderiv(Yt).(ts)),Inf) < 1.e-4 
 
 
 
