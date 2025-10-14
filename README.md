@@ -5,6 +5,7 @@
 [![codecov.io](https://codecov.io/gh/andreasvarga/PeriodicMatrixEquations.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/PeriodicMatrixEquations.jl?branch=master)
 [![stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://andreasvarga.github.io/PeriodicMatrixEquations.jl/stable/)
 [![dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://andreasvarga.github.io/PeriodicMatrixEquations.jl/dev/)
+[![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-Article-informational?style=flat&logo=linkedin&logoColor=white&color=0D76A8)](https://www.linkedin.com/pulse/periodicmatrixequations-julia-package-solving-periodic-andreas-varga-cusde/?trackingId=XCVEKcqKSjmk9GjGcGL1kA%3D%3D)
 [![The MIT License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](https://github.com/andreasvarga/PeriodicMatrixEquations.jl/blob/master/LICENSE.md)
 
 ## Solution of periodic differential/difference matrix equations 
