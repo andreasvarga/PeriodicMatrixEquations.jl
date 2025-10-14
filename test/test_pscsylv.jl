@@ -639,6 +639,20 @@ F = G*inv(P);
 @time P1 = pfcsylv(Ap,-Acl,Bp*G,K = 120, abstol = 1.e-12, reltol = 1.e-12, intpol = true);
 @test norm(P1) > 1.e7
 
+# Montagnier & Spiteri (2002)
+#  
+α = 1.2
+A5 = t -> 2pi*[-1+α*cos(2pi*t)^2 1-α*sin(4pi*t)/2; -1-α*sin(4pi*t)/2 -1+α*sin(2pi*t)^2 ];
+b = [0;1]
+period = 1. 
+Ap = PeriodicFunctionMatrix(A5,period); Bp = PeriodicFunctionMatrix(b,period);  
+Acl = PeriodicFunctionMatrix([-2pi 0;0 -2pi],period); G = rand(1,2); 
+@time P = prcsylv(-Ap,Acl,-Bp*G,K = 512, abstol = 1.e-12, reltol = 1.e-12, intpol = true);
+F = G*inv(P); 
+@test all(real(psceig(Ap+Bp*F,200)) .< -6)
+@test norm(-Ap*P+P*Acl-Bp*G+pmderiv(P)) < 1.e-7  
+Ph = hrchop(convert(HarmonicArray,P)); 
+Ps = convert(PeriodicSymbolicMatrix,Ph)
 
 
 A0(t) = [-cos(t)-1]
